@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project USBModem">
+    <!--this file was created by Eclipse Runnable JAR Export Wizard-->
+    <!--ANT 1.7 is required                                        -->
+    <target name="create_run_jar">
+        <jar destfile="/home/pi/usbModem.jar" filesetmanifest="mergewithoutmain">
+            <manifest>
+                <attribute name="Main-Class" value="net.jones.serialModem.BatchStartUp"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="/home/pi/workspace/USBModem/bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="/usr/share/java/RXTXcomm.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/usr/share/java/RXTXcomm-2.2pre2.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/pi/Java/jars/jsch-0.1.54.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/usr/share/java/ant.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/pi/workspace/USBModem/commons-cli-1.4.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/pi/workspace/USBModem/commons-lang3-3.8.1.jar"/>
+        </jar>
+    </target>
+</project>
