@@ -11,7 +11,6 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.Socket;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -120,26 +119,30 @@ public class SerialModem {
 
 	 
 	
-	protected void buildMenu() throws IOException, URISyntaxException {
+	protected void buildMenu() {
 		bbss.clear();
 		opts = 0;
-		String splash = new String(Files.readAllBytes(Paths.get(new URI(splush))));
-		String[] part = splash.split(_part);
-		header = part[0].replaceAll("\n", CRLF).getBytes();
-		help   = part[1].replaceAll("\n", CRLF).getBytes();
-		String b[] = part[2].split(_bbs);
-		StringBuffer mn = new StringBuffer("");
-		
-		for (int x = 0; x < b.length; x++) {
-			BBS bbs = new BBS(b[x]);
-			if (bbs.port > 0) {
-				bbss.put(new Integer(bbs.number), bbs);
-				mn.append("   " + bbs.number 
-						+ "  -  " + bbs.name.trim()
-						+ "  -  " + bbs.host.trim() + ":" + bbs.port + CRLF);
+		try {
+			String splash = new String(Files.readAllBytes(Paths.get(new URI(splush))));
+			String[] part = splash.split(_part);
+			header = part[0].replaceAll("\n", CRLF).getBytes();
+			help   = part[1].replaceAll("\n", CRLF).getBytes();
+			String b[] = part[2].split(_bbs);
+			StringBuffer mn = new StringBuffer("");
+
+			for (int x = 0; x < b.length; x++) {
+				BBS bbs = new BBS(b[x]);
+				if (bbs.port > 0) {
+					bbss.put(new Integer(bbs.number), bbs);
+					mn.append("   " + bbs.number 
+							+ "  -  " + bbs.name.trim()
+							+ "  -  " + bbs.host.trim() + ":" + bbs.port + CRLF);
+				}
 			}
+			menu = mn.toString().getBytes();
+		} catch (Exception e ){
+			menu = (CRLF+" >> Atari usbModem << "+CRLF).getBytes();	
 		}
-		menu = mn.toString().getBytes();
 	}
 
 
