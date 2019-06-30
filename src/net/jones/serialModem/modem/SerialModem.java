@@ -141,10 +141,11 @@ public class SerialModem {
 			}
 			menu = mn.toString().getBytes();
 		} catch (Exception e ){
-			menu = (CRLF+" >> Atari usbModem << "+CRLF).getBytes();	
+			header = (CRLF+" >> Atari usbModem << "+CRLF).getBytes();	
+			help   = (CRLF+" Help missing !!! "+CRLF).getBytes();	
+            menu   = (CRLF+" >> Atari usbModem << "+CRLF).getBytes();
 		}
 	}
-
 
 	protected boolean processCommand(String command) throws IOException     {
 
