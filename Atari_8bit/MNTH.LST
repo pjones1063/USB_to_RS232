@@ -1,0 +1,44 @@
+1 REM ******************************
+2 REM  Print calendar using getdtm
+3 REM ******************************
+4 REM 
+110 DIM T(12):DIM M(12):DIM P$(40):DIM RS$(80)
+120 FOR X=1 TO 12:READ A:T(X)=A:NEXT X
+130 FOR X=1 TO 12:READ A:M(X)=A:NEXT X
+140 GRAPHICS 0: GOSUB 400
+150 P$ = STR$(YY):P$(LEN(P$)+1)="/":P$(LEN(P$)+1)=STR$(MM):? P$
+158 REM ****************************
+159 REM ** Calulate start DOW
+160 IF MM<3 THEN YY=YY-1
+170 DD=1:A=YY+INT(YY/4)-INT(YY/100)+INT(YY/400)+T(MM)+DD
+180 DW=INT((((A/7)-INT(A/7))*7)+5E-06)
+188 REM ****************************
+189 REM ** Calulate leap year
+190 IF (YY/4)=INT(YY/4) AND ((YY/100)<>INT(YY/100) OR (YY/400)=INT(YY/400)) THEN M(2)=29
+208 REM ****************************
+209 REM ** Display the calendar
+210 P$="":? :? "  S  M  T  W  T  F  S":? 
+220 FOR D=1 TO M(MM) STEP 0
+230 FOR X=1 TO 7
+240 P$(LEN(P$)+1)=" "
+250 IF X>DW AND D<=M(MM) THEN GOSUB 500
+260 IF X<=DW THEN P$(LEN(P$)+1)="  "
+270 NEXT X
+280 ? P$:P$="":DW=0
+290 NEXT D
+300 END 
+398 REM ***************************
+399 REM *** Read serial port data
+400 TRAP 460:OPEN #3,12,0,"R:"
+420 INPUT #3,RS$:PRINT #3,"getdtm":FOR X=1 TO 100:NEXT X
+430 INPUT #3,RS$:CLOSE #3
+440 IF LEN(RS$)>22 THEN YY=VAL(RS$(7,10)):MM=VAL(RS$(12,13)):RETURN
+460 TRAP 40000
+470 ?:? "Enter year and month":INPUT YY,MM
+480 ?:?:RETURN
+498 REM ***************************
+499 REM ** Format day
+500 IF D<10 THEN P$(LEN(P$)+1)=" "
+510 P$(LEN(P$)+1)=STR$(D):D=D+1:RETURN
+1000 DATA 0,3,2,5,0,3,5,1,4,6,2,4
+1001 DATA 31,28,31,30,31,30,31,31,30,31,30,31
