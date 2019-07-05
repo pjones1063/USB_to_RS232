@@ -1,7 +1,9 @@
 1 REM ******************************
 2 REM Print calendar using getdtm
-3 REM ******************************
-4 REM 
+3 REM usbModem command from sr port
+4 REM -  2400 baud 8/1 bits/stop
+5 REM ******************************
+6 REM 
 110 DIM T(12):DIM M(12):DIM P$(40):DIM RS$(80)
 120 FOR X=1 TO 12:READ A:T(X)=A:NEXT X
 130 FOR X=1 TO 12:READ A:M(X)=A:NEXT X
@@ -9,9 +11,9 @@
 150 P$=STR$(YY):P$(LEN(P$)+1)="/":P$(LEN(P$)+1)=STR$(MM)
 151 P$(LEN(P$)+1)=" ":P$(LEN(P$)+1)=STR$(HR):P$(LEN(P$)+1)=":"
 152 P$(LEN(P$)+1)=STR$(MN):? P$
-158 REM ****************************  159 REM ** Calulate start DOW
+158 REM ****************************
 159 REM ** Calulate start DOW
-170 DD=1:A=YY+INT(YY/4)-INT(YY/100)+INT(YY/400)+T(MM)+DD
+170 A=YY+INT(YY/4)-INT(YY/100)+INT(YY/400)+T(MM)+1:REM DD=1
 180 DW=INT((((A/7)-INT(A/7))*7)+5E-06)
 188 REM ****************************
 189 REM ** Calulate leap year
@@ -31,22 +33,26 @@
 397 REM ***************************
 398 REM *** Read serial port data
 399 REM *** @ 2400, 8, 1
-400 TRAP 430:XIO 36,#3,12,0,"R:":XIO 38,#3,64,0,"R"
+400 TRAP 430:XIO 36,#3,12,0,"R:":XIO 38,#3,64,0,"R:"
 410 OPEN #3,13,0,"R:":XIO 40,#3,0,0,"R:"
 420 PRINT #3,"getdtm":FOR X=1 TO 24:NEXT X:INPUT #3,RS$
 430 CLOSE #3:TRAP 40000:? :? RS$:? :? 
 440 IF LEN(RS$)>20 THEN GOSUB 600:RETURN 
-470 ? :? "Enter year and month":INPUT YY,MM
+470 ? :? "Enter year month day:":INPUT YY,MM,DD
 480 ? :? :RETURN 
 498 REM ***************************
 499 REM ** Format day
-500 IF D<10 THEN P$(LEN(P$)+1)=" "
-510 P$(LEN(P$)+1)=STR$(D):D=D+1:RETURN 
+500 D2=INT(D/10):D1=D-(D2*10):D2=D2+48:D1=D1+48
+520 IF D=DD THEN D2=D2+128:D1=D1+128
+530 IF D>=10 THEN P$(LEN(P$)+1)=CHR$(D2)
+535 IF D<10 THEN P$(LEN(P$)+1)=" "
+540 P$(LEN(P$)+1)=CHR$(D1)
+550 D=D+1:RETURN 
 598 REM ***************************
-599 REM ** PARSE DATE
+599 REM ** Parse date and time
 600 FOR X=1 TO LEN(RS$)
 610 IF RS$(X,X+5)<>"getdtm" THEN NEXT X
-620 YY=VAL(RS$(X+6,X+9)):MM=VAL(RS$(X+11,X+12))
+620 YY=VAL(RS$(X+6,X+9)):MM=VAL(RS$(X+11,X+12)):DD=VAL(RS$(X+14,X+15))
 630 HR=VAL(RS$(X+17,X+18)):MN=VAL(RS$(X+19,X+21))
 640 RETURN 
 1000 DATA 0,3,2,5,0,3,5,1,4,6,2,4
