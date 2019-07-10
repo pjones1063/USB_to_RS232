@@ -8,7 +8,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Serializable;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.file.Files;
@@ -18,7 +17,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Hashtable;
-import java.util.Stack;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,7 +35,6 @@ import com.jcraft.jsch.Session;
 
 public class SerialModem {
 
-
  	protected final static char   LF       = '\n';
 	protected final static char   CR       = '\r';
 	protected final static char   ST	   = '*';
@@ -51,8 +48,6 @@ public class SerialModem {
 	protected final static String _part    = "/part";
 	protected final static String _bbs     = "/bbs";
 	protected final static byte [] CLEAR   = new byte[] {27,91,50,74};
-	protected final static String up       = new String(new byte[] {27,91,65});
-	protected final static String down     = new String(new byte[] {27,91,66});
 	
 	protected final static int TO          = 30000;
 	protected final static int SSHPORT     = 22;
@@ -62,13 +57,11 @@ public class SerialModem {
 	protected final static String PROMPT   = CRLF+CRLF+" PiModem- ";
 	
 	protected final Hashtable<Integer, BBS> bbss  = new Hashtable<Integer, BBS>();
-	protected final Stack<String> commandStack = new Stack<>();
-	
 	protected Logger lg;
 
-	protected boolean  disconnected = true;
+	protected boolean  disconnected = true, timerb = true;
 	protected Socket   socket;
-	protected BBSInStream srIn;
+	protected InputStream srIn;
 	protected OutputStream srOut;
 	protected Channel  channel;
 	protected YModem  yModem;
@@ -95,7 +88,8 @@ public class SerialModem {
 				SerialPort.PARITY_NONE);
 		
 		srOut  = serialPort.getOutputStream();
-		srIn   = new BBSInStream(serialPort.getInputStream());
+		srIn   = new ModemInputStream(serialPort.getInputStream());
+		
 		yModem = new YModem(srIn, srOut);
 		xModem = new XModem(srIn, srOut);
 		
@@ -116,8 +110,6 @@ public class SerialModem {
 		}	
 	}
 
-
-	 
 	
 	protected void buildMenu() {
 		bbss.clear();
@@ -147,12 +139,10 @@ public class SerialModem {
 		}
 	}
 
-	protected boolean processCommand(String command) throws IOException     {
+	protected boolean processCommand(String command) throws IOException  {
 
 		String opt = "";
 		if(command == null || command.equals("")) return true;
-		
-		if(!commandStack.contains(command)) commandStack.push(command);
 		
 		StringTokenizer st = new StringTokenizer(command.trim());
 		int stCount = st.countTokens();
@@ -180,21 +170,27 @@ public class SerialModem {
 			return true;
 
 		} else	if("getdtm".equals(opt)){		
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy MM dd kk mm");
-			srOut.write(sdf.format(new Date()).getBytes());
+			srOut.write( (new SimpleDateFormat("yyyy MM dd kk mm").format(new Date())).getBytes());
 			srOut.write(CRLF.getBytes());
 			srOut.flush();
 			return true;
 			
-		} else if(( (stCount == 3 && "atd".equals(opt)) ||  
+		} else if(( (stCount == 3 && "atdt".equals(opt)) ||  
 	  	 	  	    (stCount == 3 && "bbs".equals(opt)))  &&
 			        StringUtils.isNumeric(cmd.get(2)) ) {
 			return connectTCP(cmd.get(1), Integer.parseInt(cmd.get(2)));
 
 			
+		} else if("timer".equals(opt)){
+			timerb = ! timerb;
+			srOut.write(CRLF.getBytes());
+			srOut.write(("   Inactive timer:  " + (timerb ?"On":"off") ).getBytes());
+			srOut.write(CRLF.getBytes());
+			srOut.flush();
+			return true;
+		
 		} else if(stCount == 2 && "ssh".equals(opt)) {
 			return connectSSH(cmd.get(1));
-		
 		
 		} else if("lsi".equals(opt)) {
 			return listFiles(inbound);
@@ -247,9 +243,7 @@ public class SerialModem {
 		try {
 			while ((c = srIn.read()) > -1 && c != 0x0D) {			
 				c = (c == 0x7F) ? 0x08 : c;	
-				
-				System.out.print((char) (c & 0xFF));
-				
+				//System.out.print((char) (c & 0xFF));
 				if(pwd)
 					srOut.write(ST & 0xFF);
 				else
@@ -258,17 +252,8 @@ public class SerialModem {
 				if(c == 0x08 && line.length() > 0)
 					line.deleteCharAt(line.length()-1);
 				else
-					line.append((char) (c & 0xFF));
-
-				if(line.toString().contains(up) || line.toString().contains(down) ) {
-					if (commandStack.empty())
-						line = new StringBuilder(); 
-					else 
-						line = new StringBuilder(commandStack.pop()); 
-					
-					srOut.write(PROMPT.getBytes());
-					
-				}
+					line.append((char) (c & 0xFF));				
+			
 			}			
 
 		} catch (IOException e) {
@@ -293,6 +278,7 @@ public class SerialModem {
 	
 	protected boolean connectYREC() throws IOException    {
 		disconnected = false;
+		timerb = false;
 		Path path;
 		try {			
 			srOut.write((CRLF+CRLF+" ** YMODEM batch receive to :"+inbound+CRLF).getBytes());
@@ -314,8 +300,8 @@ public class SerialModem {
 
 
 	protected boolean connectYSND() throws IOException   {
-		
 		disconnected = false;
+		timerb = false;
 		try {
 			srOut.write((CRLF+CRLF+" ** YMODEM batch send from :"+outbound+CRLF).getBytes());
 			srOut.flush();
@@ -337,6 +323,7 @@ public class SerialModem {
 
 	protected boolean connectXSND(String file) throws IOException   {
 		disconnected = false;
+		timerb = false;
 		Path path;
 		try {
 			srOut.write((CRLF+CRLF+" ** XMODEM sending file :"+file+CRLF).getBytes());
@@ -359,6 +346,7 @@ public class SerialModem {
 	
 	protected boolean connectXREC(String file) throws IOException   {
 		disconnected = false;
+		timerb = false;
 		Path path;
 		try {
 			srOut.write((CRLF+CRLF+" ** XMODEM receiving file "+file+CRLF).getBytes());					
@@ -528,28 +516,25 @@ public class SerialModem {
 	}
 	
 	
-	protected class BBSInStream extends InputStream implements Serializable {
-		protected static final long serialVersionUID = -4446170417058474216L;
+	
+	protected class ModemInputStream extends InputStream  {
 		protected InputStream  inputstream;
-		
-
-		public BBSInStream(InputStream i) {
-			inputstream = i;
+		public ModemInputStream(InputStream mis) {
+			inputstream = mis;
 			stopCnt = 0;
 			timer = new Date().getTime() / 1000;	
-			
 			(new Thread(new Runnable() {
 				@Override
 				public void run() {
-					while (true) {
+					while (true) {						
 						try {Thread.sleep(60000);} catch (Exception e) {}
 						long now = new Date().getTime() / 1000;
-						if( ! disconnected && ( (now - timer) > (5 * 60) ))
+						if(timerb && !disconnected && (now - timer) > (5 * 60) )
 							try {userExit();} catch (Exception e) {}
-					}				
+					}	
+
 				}
 			})).start();
-		
 		}
 
 		
@@ -561,7 +546,8 @@ public class SerialModem {
 					stopCnt = 0;
 				}
 			}
-			timer = new Date().getTime() / 1000;
+			
+		    timer = new Date().getTime() / 1000;
 		}
 
 

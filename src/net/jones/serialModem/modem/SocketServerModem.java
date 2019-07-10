@@ -28,7 +28,7 @@ public class SocketServerModem extends SerialModem {
 		lg.info("Socket Server Modem Restarted on port: "+port);
 		cntSock = svrSock.accept();
 		srOut  = cntSock.getOutputStream();		
-		srIn   = new BBSInStream(cntSock.getInputStream());
+		srIn   = new ModemInputStream(cntSock.getInputStream());
 		yModem = new YModem(srIn, srOut);
 		xModem = new XModem(srIn, srOut);
 			

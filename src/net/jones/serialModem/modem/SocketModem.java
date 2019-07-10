@@ -23,7 +23,7 @@ public class SocketModem extends SerialModem {
 		lg.info("Socket Modem Restarted on: localhost:" + port);
 
 		srOut  = connectionSocket.getOutputStream();
-		srIn   = new BBSInStream(connectionSocket.getInputStream());
+		srIn   = new ModemInputStream(connectionSocket.getInputStream());
 		yModem = new YModem(srIn, srOut);
 		xModem = new XModem(srIn, srOut);
 		
