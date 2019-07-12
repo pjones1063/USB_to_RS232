@@ -41,7 +41,7 @@
   
 
    *    ? -->  help
-   *   atz -->  Clear & Display Menu
+   *    atz -->  Clear & Display Menu
    *    atd (hostname) (port) --> TCP connect to host    
    *    bbs (hostname) (port) --> TCP connect to host   
    *    cls -->  Clear & Display Menu       
@@ -55,4 +55,5 @@
    *    timmer --> set on/off inactive timer
 
 -------------------------------------------------------------
+
 
