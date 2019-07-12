@@ -6,6 +6,8 @@
 
  ### Lunix/Raspberry Pi Usage
 
+ * Best run on a Raspberry Pi. When you order the USB/RS232 cable - buy a Pi as well!
+
  * Purchase a USB to RS232 Adapter with PL2303 Chipset (on Amazon)
  
  * Install java JVM on linux and/or Pi host 
