@@ -12,7 +12,7 @@
  
  * Install java JVM on linux and/or Pi host
  
- * Install the librxtx-java API -> sudo apt-get install librxtx-java
+ * Install the librxtx-java API -> from http://rxtx.qbang.org/wiki/index.php/Main_Page
  
  * Install the JSch API ->  from http://www.jcraft.com/jsch/
  
