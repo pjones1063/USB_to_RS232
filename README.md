@@ -52,7 +52,7 @@
    *    yrecv --> YMODEM batch upload 
    *    xsend (filename) --> XMODEM dowload
    *    xrecv (filename) --> XMODEM upload 
-   *    timmer --> set on/of inactive timer
+   *    timmer --> set on/off inactive timer
 
 -------------------------------------------------------------
 
