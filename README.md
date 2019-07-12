@@ -1,5 +1,5 @@
 
-# Atari USB To RS232 Adapter
+# Atari RS232 To Linux (or Windows) USB Adapter
  
   
  ### Connect to any BBS or SSH host from any 8 or 16 bit Atari computer using an RS232 to USB PL2303 cable
