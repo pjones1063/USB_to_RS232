@@ -1,9 +1,10 @@
 
-# Lunix/Raspberry Pi Usage
+# Atari USB To RS232 Adapter
  
   
  ### Connect to any BBS or SSH host from any 8 or 16 bit Atari computer using an RS232 to USB PL2303 cable
- 
+
+ ### Lunix/Raspberry Pi Usage
 
  * Purchase a USB to RS232 Adapter with PL2303 Chipset (on Amazon)
  
