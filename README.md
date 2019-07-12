@@ -12,8 +12,8 @@
  
  * run on Pi/Linux as ->    $ ./usbModem.jar "-s=/dev/ttyUSB0" "-b=19200"
     where:
-         -s   =  serial port of the adapter  
-         -b   =  serial port baud rate
+       ***    -s   =  serial port of the adapter  
+       ***    -b   =  serial port baud rate
  
  * Connect up the cable to an Atari and run some terminal 
     program - like TAZ or Bobterm
@@ -30,7 +30,7 @@
     as the YMODEM - send and recv folder.  Recompile and package jar
 
 
- Good Luck!
+*  Good Luck!
 
 ------------------------------------------------------------
 
