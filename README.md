@@ -10,7 +10,11 @@
 
  * Purchase a USB to RS232 Adapter with PL2303 Chipset (on Amazon)
  
- * Install java JVM on linux and/or Pi host 
+ * Install java JVM on linux and/or Pi host
+ 
+ * Install the librxtx-java API -> sudo apt-get install librxtx-java
+ 
+ * Install the JSch API ->  from http://www.jcraft.com/jsch/
  
  * run on Pi/Linux as ->    $ ./usbModem.jar "-s=/dev/ttyUSB0" "-b=19200"
     where:
