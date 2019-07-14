@@ -10,14 +10,14 @@
 
  * Purchase a USB to RS232 Adapter with PL2303 Chipset (on Amazon)
  
- * Install java JVM 
-       On Raspberry Pi/Debian run  $ sudo apt-get install oracle-java8-jdk
+ * Install java JVM   
+       On Raspberry Pi/Debian run  $ sudo apt-get install oracle-java8-jdk  
  
- * Install the librxtx-java API ->  http://rxtx.qbang.org/wiki/index.php/Main_Page
-       On Raspberry Pi/Debian run  $ sudo apt install librxtx-java
+ * Install the librxtx-java API ->  http://rxtx.qbang.org/wiki/index.php/Main_Page  
+       On Raspberry Pi/Debian run  $ sudo apt install librxtx-java  
  
- * Install the JSch API ->   http://www.jcraft.com/jsch/
-       On Raspberry Pi/Debian run  $ sudo apt install libjsch-java
+ * Install the JSch API ->   http://www.jcraft.com/jsch/  
+       On Raspberry Pi/Debian run  $ sudo apt install libjsch-java  
  
  * Run on Pi/Linux as ->    $ ./usbModem.jar "-s=/dev/ttyUSB0" "-b=19200"
     where:
