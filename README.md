@@ -19,8 +19,8 @@
  * Install the JSch API ->   http://www.jcraft.com/jsch/  
        On Raspberry Pi/Debian run  $ sudo apt install libjsch-java  
  
- * Run on Pi/Linux as ->    $ ./usbModem.jar "-s=/dev/ttyUSB0" "-b=19200"
-    where:
+ * Run the app:    $ ./usbModem.jar "-s=/dev/ttyUSB0" "-b=19200"
+    where:  
     
      -s   =  serial port of the adapter  
      -b   =  serial port baud rate
