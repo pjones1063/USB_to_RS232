@@ -4,19 +4,22 @@
   
  ### Connect to any BBS or SSH host from any 8 or 16 bit Atari computer using an RS232 to USB PL2303 cable
 
- ### Lunix/Raspberry Pi Usage
+ ### Debian - Raspberry Pi Usage
 
  * Best run on a Raspberry Pi. When you order the USB/RS232 cable - buy a Pi as well!
 
  * Purchase a USB to RS232 Adapter with PL2303 Chipset (on Amazon)
  
- * Install java JVM on linux and/or Pi host
+ * Install java JVM 
+       On Raspberry Pi/Debian run  $ sudo apt-get install oracle-java8-jdk
  
- * Install the librxtx-java API -> from http://rxtx.qbang.org/wiki/index.php/Main_Page
+ * Install the librxtx-java API ->  http://rxtx.qbang.org/wiki/index.php/Main_Page
+       On Raspberry Pi/Debian run  $ sudo apt install librxtx-java
  
- * Install the JSch API ->  from http://www.jcraft.com/jsch/
+ * Install the JSch API ->   http://www.jcraft.com/jsch/
+       On Raspberry Pi/Debian run  $ sudo apt install libjsch-java
  
- * run on Pi/Linux as ->    $ ./usbModem.jar "-s=/dev/ttyUSB0" "-b=19200"
+ * Run on Pi/Linux as ->    $ ./usbModem.jar "-s=/dev/ttyUSB0" "-b=19200"
     where:
     
      -s   =  serial port of the adapter  
