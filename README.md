@@ -31,7 +31,7 @@
     program - like TAZ or Bobterm
     -ensure the baud rate is as above and bits/stop bit is 8/1
  
-    File banner.asc and dialdirectoru.xml can be placed in folder
+    File 'banner.asc' and 'dialdirectory.xml' can be placed in folder
     '/home/pi/' - this can be changed in src file -
     src/net/jones/serialModem/modem/SerialModem.java
     to whatever path you like.  Recompile and package jar.
