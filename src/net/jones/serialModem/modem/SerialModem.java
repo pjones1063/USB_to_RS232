@@ -369,15 +369,15 @@ public class SerialModem {
 	}
 	
 	
-	protected boolean doConnectBBS(int command) throws IOException {
+	protected boolean doConnect(int command) throws IOException {
 		Integer o = new Integer(command);
 		if(!bbss.containsKey(o)) return false;		
 		bbs =  bbss.get(o);	
 		
 		if(bbs.ssh)
-			return doConnectSSH(bbs.user+"@"+bbs.host+":"+bbs.port);
+			return doConnectSSH("bbsuser@"+bbs.host+":"+bbs.port);
 		else
-			return doConnectTCP(bbs.host, bbs.port);
+			return doConnectTelnet(bbs.host, bbs.port);
 	}
 
 	
@@ -392,18 +392,27 @@ public class SerialModem {
 			
 			String user = command.substring(0, sp);
 			String host = command.substring(sp+1);
+			int    port = SSHPORT;
+			
+			if(host.contains(":")) {
+				try {
+				sp = host.indexOf(":");
+				port = Integer.parseInt(host.substring(sp+1));
+				host = host.substring(0, sp);
+				} catch (Exception n) {} 
+			}
 	
 			srOut.write((CRLF+CRLF+"Password: ").getBytes());
             String psswd = getStringFromPort(true);
 
 			srOut.write((CRLF+CRLF+"Terminal type (ansi): ").getBytes());
-            String tty = getStringFromPort(false);
-            if(null == tty || tty.equals("")) tty = "ansi";
+            String pty = getStringFromPort(false);
+            if(null == pty || pty.equals("")) pty = "ansi";
             		
 			if(host.length() < 1 || user.length() < 1 || psswd.length() < 1) return false;
 			srOut.write(CONECT.getBytes());
 
-			Session session = jsch.getSession(user, host, SSHPORT);
+			Session session = jsch.getSession(user, host, port);
 			session.setPassword(psswd);
 			java.util.Properties config = new java.util.Properties(); 
 			config.put("StrictHostKeyChecking", "no");
@@ -415,7 +424,7 @@ public class SerialModem {
 			//((ChannelShell) channel).setPtyType("xterm");
 			//((ChannelShell) channel).setPtyType("vt100");
 			
-			((ChannelShell) channel).setPtyType(tty);
+			((ChannelShell) channel).setPtyType(pty);
 			((ChannelShell) channel).setEnv("LANG", "ja_JP.eucJP");
 
 			disconnected = false;		 
@@ -439,7 +448,7 @@ public class SerialModem {
 	}
 
 	
-	protected boolean doConnectTCP(String host, int port) throws IOException   {
+	protected boolean doConnectTelnet(String host, int port) throws IOException   {
 		srOut.write(CONECT.getBytes());
 
 		try {if(socket != null && socket.isConnected()) socket.close(); Thread.sleep(2000);} catch (Exception n) {}
@@ -724,7 +733,7 @@ public class SerialModem {
 		if (stCount > 0) opt = cmd.get(0).toLowerCase().trim();
  		
 		if(stCount == 1 && StringUtils.isNumeric(command)) {
-			return doConnectBBS(Integer.parseInt(command));
+			return doConnect(Integer.parseInt(command));
 
 		} else if(stCount == 2 && "ssh".equals(opt)) {
 			return doConnectSSH(cmd.get(1));
@@ -745,7 +754,7 @@ public class SerialModem {
 				 || (stCount == 3 && "bbs".equals(opt)))
 							&&  StringUtils.isNumeric(cmd.get(2)) ) {
 			
-			return doConnectTCP(cmd.get(1), Integer.parseInt(cmd.get(2)));
+			return doConnectTelnet(cmd.get(1), Integer.parseInt(cmd.get(2)));
 
 			
 		} else if(stCount == 2 && "src".equals(opt)) {
