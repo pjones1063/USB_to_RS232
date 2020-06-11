@@ -22,11 +22,6 @@ public class ZDLEEncoder {
 		encode();
 	}
 	
-	private void putZdle(byte b){
-		zdle[zdleLen] = b;
-		zdleLen++;
-	}
-	
 	private void encode(){
 		byte previous = 0;
 		for(byte b: raw){
@@ -41,17 +36,22 @@ public class ZDLEEncoder {
 		}
 	}
 	
-	public byte[] raw(){
-		return raw;
+	private void putZdle(byte b){
+		zdle[zdleLen] = b;
+		zdleLen++;
 	}
 	
-	public int zdleLen(){
-		return zdleLen;
+	public byte[] raw(){
+		return raw;
 	}
 	
 	public byte[] zdle(){
 		return zdle;
 		
+	}
+	
+	public int zdleLen(){
+		return zdleLen;
 	}
 	
 }

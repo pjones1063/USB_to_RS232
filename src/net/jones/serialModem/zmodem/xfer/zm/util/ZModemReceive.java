@@ -17,18 +17,18 @@ import net.jones.serialModem.zmodem.zm.io.ZMPacketOutputStream;
 
 public class ZModemReceive {
 	
-	private FileAdapter destination;
-	private int fOffset = 0;
-	private String filename;
-	
-	private OutputStream fileOs = null;
-
-	private InputStream netIs;
-	private OutputStream netOs;
-	
 	private enum Expect{
 		FILENAME,DATA,NOTHING;
 	}
+	private FileAdapter destination;
+	private int fOffset = 0;
+	
+	private String filename;
+
+	private OutputStream fileOs = null;
+	private InputStream netIs;
+	
+	private OutputStream netOs;
 	
 	
 	public ZModemReceive(FileAdapter destDir,InputStream netin,OutputStream netout) throws IOException{
@@ -39,6 +39,16 @@ public class ZModemReceive {
 		destination = destDir;
 		netIs  = netin;
 		netOs  = netout;
+	}
+	
+	private void decodeFileNameData(DataPacket p){
+		StringBuilder buffer = new StringBuilder(128);
+		for(byte b: p.data()){
+			if(b==0) break;
+			buffer.append((char)b);
+		}
+		
+		filename = buffer.toString();
 	}
 	
 	private FileAdapter getCurrentFile(){
@@ -66,23 +76,6 @@ public class ZModemReceive {
 		}
 		fileOs = f.getOutputStream(append);
 		fOffset = offset;
-	}
-	
-	private void decodeFileNameData(DataPacket p){
-		StringBuilder buffer = new StringBuilder(128);
-		for(byte b: p.data()){
-			if(b==0) break;
-			buffer.append((char)b);
-		}
-		
-		filename = buffer.toString();
-	}
-	
-	private void writeData(DataPacket p) throws IOException{
-		
-		fileOs.write(p.data());
-		fOffset += p.data().length;
-		
 	}
 	
 	public void receive() {		
@@ -181,6 +174,13 @@ public class ZModemReceive {
 			System.out.println("IO Exception "+e.getMessage());
 			/*e.printStackTrace();*/
 		}
+		
+	}
+	
+	private void writeData(DataPacket p) throws IOException{
+		
+		fileOs.write(p.data());
+		fOffset += p.data().length;
 		
 	}
 }

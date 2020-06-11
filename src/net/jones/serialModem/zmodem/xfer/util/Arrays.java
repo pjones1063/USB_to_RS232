@@ -18,39 +18,8 @@ public class Arrays {
 		return java.util.Arrays.equals(a, a2);
 	}
 
-	public static long toInteger(byte[] array, int size, Endianness endian){
-		long n = 0;
-		int offset=0,increment=1;
-		switch(endian){
-		case Little:
-			increment = 1;
-			offset    = 0;
-			break;
-		case Big:
-			increment = -1;
-			offset    = size-1;
-			break;
-
-		}
-		
-		for(int i=0;i<size;i++){
-			n += (0xff&array[offset]) * (0x1 << i*8);
-			offset += increment;
-		}
-		
-		return n;
-	}
-	
-	public static short toShort(byte[] array, Endianness endian){
-		return (short)toInteger(array,2,endian);
-	}
-	
-	public static int toInt(byte[] array, Endianness endian){
-		return (int)toInteger(array,4,endian);
-	}
-	
-	public static long toLong(byte[] array, Endianness endian){
-		return toInteger(array,8,endian);
+	public static byte[] fromInt(int i,Endianness endian){
+		return fromInteger(i, 4, endian);
 	}
 	
 	public static byte[] fromInteger(long n,int size, Endianness endian){
@@ -76,13 +45,44 @@ public class Arrays {
 		return ret;
 	}
 	
+	public static byte[] fromLong(long i,Endianness endian){
+		return fromInteger(i, 8, endian);
+	}
+	
 	public static byte[] fromShort(short s,Endianness endian){
 		return fromInteger(s, 2, endian);
 	}
-	public static byte[] fromInt(int i,Endianness endian){
-		return fromInteger(i, 4, endian);
+	
+	public static int toInt(byte[] array, Endianness endian){
+		return (int)toInteger(array,4,endian);
 	}
-	public static byte[] fromLong(long i,Endianness endian){
-		return fromInteger(i, 8, endian);
+	
+	public static long toInteger(byte[] array, int size, Endianness endian){
+		long n = 0;
+		int offset=0,increment=1;
+		switch(endian){
+		case Little:
+			increment = 1;
+			offset    = 0;
+			break;
+		case Big:
+			increment = -1;
+			offset    = size-1;
+			break;
+
+		}
+		
+		for(int i=0;i<size;i++){
+			n += (0xff&array[offset]) * (0x1 << i*8);
+			offset += increment;
+		}
+		
+		return n;
+	}
+	public static long toLong(byte[] array, Endianness endian){
+		return toInteger(array,8,endian);
+	}
+	public static short toShort(byte[] array, Endianness endian){
+		return (short)toInteger(array,2,endian);
 	}
 }

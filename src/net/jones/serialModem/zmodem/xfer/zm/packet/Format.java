@@ -29,20 +29,20 @@ public enum Format{
 		character = fmt;
 	}
 	
-	public CRC.Type crc(){
-		return crc;
-	}
-	
 	public byte character(){
 		return character.value();
 	}
 	
-	public int width(){
-		return width;
+	public CRC.Type crc(){
+		return crc;
 	}
 	
 	public boolean hex(){
 		return (this == HEX);
+	}
+	
+	public int width(){
+		return width;
 	}
 
 }

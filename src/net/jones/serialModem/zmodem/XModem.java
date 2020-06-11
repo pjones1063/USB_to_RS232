@@ -16,19 +16,19 @@ public class XModem {
         this.modem = new Modem(inputStream, outputStream);
     }
 
-    public void send(Path file,boolean useBlock1K) throws IOException, InterruptedException {
-        modem.send(file, useBlock1K);
+    public void receive(Path file) throws IOException {
+        modem.receive(file, false);
     }
 
-    public void send(Path file) throws IOException, InterruptedException {
-        modem.send(file, false);
-    }
-    
     public void receive(Path file, boolean useCRC16) throws IOException {
         modem.receive(file, useCRC16);
     }
     
-    public void receive(Path file) throws IOException {
-        modem.receive(file, false);
+    public void send(Path file) throws IOException, InterruptedException {
+        modem.send(file, false);
+    }
+    
+    public void send(Path file,boolean useBlock1K) throws IOException, InterruptedException {
+        modem.send(file, useBlock1K);
     }
 }

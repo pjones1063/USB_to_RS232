@@ -5,13 +5,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 public interface FileAdapter {
-	public String getName();
+	public boolean exists();
+	public FileAdapter getChild(String name);
 	public InputStream getInputStream() throws IOException;
+	public String getName();
 	public OutputStream getOutputStream() throws IOException;
 	public OutputStream getOutputStream(boolean append) throws IOException;
-	public FileAdapter getChild(String name);
-	public long length();
 	public boolean isDirectory();
-	public boolean exists();
+	public long length();
 	public String toString();
 }

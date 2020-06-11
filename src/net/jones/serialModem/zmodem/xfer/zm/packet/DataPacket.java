@@ -39,20 +39,12 @@ public class DataPacket extends ZMPacket {
 		data = d;
 	}
 	
-	public ZModemCharacter type(){
-		return type;
+	public void copyData(byte[] d){
+		data = Arrays.copyOf(d, d.length);
 	}
 	
 	public byte[] data(){
 		return data;
-	}
-	
-	public void setData(byte[] d){
-		data = d;
-	}
-	
-	public void copyData(byte[] d){
-		data = Arrays.copyOf(d, d.length);
 	}
 	
 	@Override
@@ -82,9 +74,17 @@ public class DataPacket extends ZMPacket {
 		return buff;
 	}
 	
-
+	public void setData(byte[] d){
+		data = d;
+	}
+	
 	@Override
 	public String toString() {
 		return type+":"+data.length+" bytes";
+	}
+	
+
+	public ZModemCharacter type(){
+		return type;
 	}
 }

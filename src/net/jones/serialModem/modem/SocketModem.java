@@ -1,6 +1,7 @@
 package net.jones.serialModem.modem;
 
  
+import java.io.IOException;
 import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -13,34 +14,12 @@ import net.jones.serialModem.zmodem.YModem;
 
 public class SocketModem extends SerialModem {
 
-	private  Socket connectionSocket = null; 
-	private  int port = -1;
+	public static void main(String[] args)  { 		
+		(new SocketModem()).go(9090); 
+	} 
+	private  Socket connectionSocket = null;
 	
-	void startSession() throws Exception {
-		
-		buildMenu();
-		connectionSocket =  new Socket("localhost", port);		
-		lg.info("Socket Modem Restarted on: localhost:" + port);
-
-		srOut  = connectionSocket.getOutputStream();
-		srIn   = new ModemInputStream(connectionSocket.getInputStream());
-		yModem = new YModem(srIn, srOut);
-		xModem = new XModem(srIn, srOut);
-		
-		srOut.write(CLEAR);
-		srOut.write(header);
-		srOut.write(menu);
-		
-		while (true) {
-			if(disconnected) {								
-				srOut.write((PROMPT).getBytes());
-				if(! processCommand(getStringFromPort(false).trim())) 
-					srOut.write((CONFAIL).getBytes());
-
-			} 
-			Thread.sleep(1000);  
-		}
-	}
+	private  int port = -1;
 	
 	public void go(int pport) {	
 		
@@ -53,7 +32,8 @@ public class SocketModem extends SerialModem {
 			try {
 				startSession();
 			} catch (Exception e) {
-				lg.log(Level.WARNING, e.getMessage());	
+  				lg.log(Level.SEVERE,"Socket:"+pport, e);				
+	
 			} finally {
 					try {srIn.close();}  catch (Exception e) {}
 					try {srOut.close();} catch (Exception e) {}
@@ -64,9 +44,42 @@ public class SocketModem extends SerialModem {
 		}
 }
 	
+	void startSession() throws Exception {
+		
+		buildMenu();
+		connectionSocket =  new Socket("localhost", port);		
+		lg.info("Socket Modem Restarted on: localhost:" + port);
+
+		srOut  = connectionSocket.getOutputStream();
+		srIn   = new TimerInputStream(connectionSocket.getInputStream());
+		yModem = new YModem(srIn, srOut);
+		xModem = new XModem(srIn, srOut);
+		
+		srOut.write(CLEAR);
+		srOut.write(header);
+		
+		while (true) {
+			if(disconnected) {								
+				srOut.write((PROMPT).getBytes());
+				if(! processCommand(getStringFromPort(false).trim())) 
+					srOut.write((CONFAIL).getBytes());
+
+			} 
+			Thread.sleep(1000);  
+		}
+	}
 	
-	public static void main(String[] args)  { 		
-		(new SocketModem()).go(9090); 
+	protected int userPassword() throws IOException {
+		connectionSocket.getOutputStream().write(bbs.password.getBytes());
+		connectionSocket.getOutputStream().flush();
+		return -1;
+	}
+	
+	
+	protected int userUserID() throws IOException {
+		connectionSocket.getOutputStream().write(bbs.user.getBytes());
+		connectionSocket.getOutputStream().flush();
+		return -1;
 	}
 	
 }

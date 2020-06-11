@@ -15,28 +15,8 @@ public class Escape {
 	private Action action = Action.ESCAPE;
 	
 	
-	public Escape(Action a){
-		this(a,0);
-	}
-	
-	
-	public Escape(Action a,int l){
-		len = l;
-		action = a;
-	}
-	
-	public Action action() {
-		return action;
-	}
-	
-	
-	public int len() {
-		return len;
-	}
-	
-	
-
 	private static Map<Byte, Escape> _specials = new HashMap<Byte, Escape>();
+	
 	
 	static{
 		_specials.put(ZModemCharacter.ZBIN.value()  ,new Escape(Action.HEADER,7 ));               
@@ -48,8 +28,6 @@ public class Escape {
 		_specials.put(ZModemCharacter.ZCRCW.value() ,new Escape(Action.DATA  ,2 ));
 	}
 	
-	
-	
 	public static Escape detect(byte b, boolean acceptsHeader){
 		Escape r = _specials.get(b);
 		
@@ -60,6 +38,22 @@ public class Escape {
 		return r;
 	}
 	
+	
+	public static byte escapeIt(byte b){
+		if(b==(byte)0x7f)
+			return ZModemCharacter.ZRUB0.value();
+		if(b==(byte)0xff)
+			return ZModemCharacter.ZRUB1.value();
+		if(b==(byte)ZModemCharacter.ZRUB0.value())
+			return 0x7f;
+		if(b==(byte)ZModemCharacter.ZRUB1.value())
+			return (byte)0xff;		
+		
+		return (byte)(b^0x40);
+	}
+	
+	
+
 	public static boolean mustEscape(byte b,byte previous, boolean escapeCtl){
 		switch(b){
 		case 0xd:
@@ -84,17 +78,23 @@ public class Escape {
 		return false;
 	}
 	
-	public static byte escapeIt(byte b){
-		if(b==(byte)0x7f)
-			return ZModemCharacter.ZRUB0.value();
-		if(b==(byte)0xff)
-			return ZModemCharacter.ZRUB1.value();
-		if(b==(byte)ZModemCharacter.ZRUB0.value())
-			return 0x7f;
-		if(b==(byte)ZModemCharacter.ZRUB1.value())
-			return (byte)0xff;		
-		
-		return (byte)(b^0x40);
+	public Escape(Action a){
+		this(a,0);
+	}
+	
+	
+	
+	public Escape(Action a,int l){
+		len = l;
+		action = a;
+	}
+	
+	public Action action() {
+		return action;
+	}
+	
+	public int len() {
+		return len;
 	}
 	
 	@Override

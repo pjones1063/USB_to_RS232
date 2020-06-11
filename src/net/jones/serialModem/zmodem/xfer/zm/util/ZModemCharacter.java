@@ -34,28 +34,28 @@ public enum ZModemCharacter {
 	ZCOMMAND(18),   
 	ZSTDERR(19);    
 
-	private byte value;
-	private ZModemCharacter(char b){
-		value = (byte)b;
-	}
-	private ZModemCharacter(int b){
-		value =(byte) b;
-	}
-	private ZModemCharacter(byte b){
-		value = b;
-	}
-	
-	
-	public byte value() {
-		return value;
-	}
-	
 	public static ZModemCharacter forbyte(byte b) {
 		for(ZModemCharacter zb : values()){
 			if(zb.value()==b)
 				return zb;
 		}
 		return null;
+	}
+	private byte value;
+	private ZModemCharacter(byte b){
+		value = b;
+	}
+	private ZModemCharacter(char b){
+		value = (byte)b;
+	}
+	
+	
+	private ZModemCharacter(int b){
+		value =(byte) b;
+	}
+	
+	public byte value() {
+		return value;
 	}
 
 }

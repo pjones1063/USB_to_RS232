@@ -1,8 +1,6 @@
 package net.jones.serialModem;
 
 import java.io.PrintWriter;
-import java.text.BreakIterator;
-import java.util.Date;
 
 import net.jones.serialModem.modem.SerialModem;
 import net.jones.serialModem.modem.SocketModem;

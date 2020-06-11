@@ -41,29 +41,6 @@ public class ZModemSend {
 		netOs  = netout;
 	}
 	
-	public boolean nextFile() throws IOException{
-		
-		if(!iter.hasNext())
-			return false;
-		
-		fileName = iter.next();
-		
-		file = files.get(fileName);
-		fileIs = file.getInputStream();
-		fOffset = 0;
-		
-		return true;
-	}
-	
-	private void position(int offset) throws IOException{
-		if(offset!=fOffset){
-			fileIs.close();
-			fileIs = file.getInputStream();
-			fileIs.skip(offset);
-			fOffset = offset;
-		}
-	}
-	
 	private byte[] getNextBlock() throws IOException{
 		byte[] data = new byte[packLen];
 		int len;
@@ -91,6 +68,29 @@ public class ZModemSend {
 		}
 		
 		return new DataPacket(fe, data);
+	}
+	
+	public boolean nextFile() throws IOException{
+		
+		if(!iter.hasNext())
+			return false;
+		
+		fileName = iter.next();
+		
+		file = files.get(fileName);
+		fileIs = file.getInputStream();
+		fOffset = 0;
+		
+		return true;
+	}
+	
+	private void position(int offset) throws IOException{
+		if(offset!=fOffset){
+			fileIs.close();
+			fileIs = file.getInputStream();
+			fileIs.skip(offset);
+			fOffset = offset;
+		}
 	}
 	
 	public void send() {

@@ -16,23 +16,8 @@ public class CustomFile implements FileAdapter{
 	}
 
 	@Override
-	public String getName() {
-		return file.getName();
-	}
-
-	@Override
-	public InputStream getInputStream() throws IOException {
-		return new FileInputStream(file);
-	}
-
-	@Override
-	public OutputStream getOutputStream() throws IOException {
-		return new FileOutputStream(file);
-	}
-
-	@Override
-	public OutputStream getOutputStream(boolean append) throws IOException {
-		return new FileOutputStream(file, append);
+	public boolean exists() {
+		return file.exists();
 	}
 
 	@Override
@@ -53,8 +38,23 @@ public class CustomFile implements FileAdapter{
 	}
 
 	@Override
-	public long length() {
-		return file.length();
+	public InputStream getInputStream() throws IOException {
+		return new FileInputStream(file);
+	}
+
+	@Override
+	public String getName() {
+		return file.getName();
+	}
+
+	@Override
+	public OutputStream getOutputStream() throws IOException {
+		return new FileOutputStream(file);
+	}
+
+	@Override
+	public OutputStream getOutputStream(boolean append) throws IOException {
+		return new FileOutputStream(file, append);
 	}
 
 	@Override
@@ -63,8 +63,8 @@ public class CustomFile implements FileAdapter{
 	}
 
 	@Override
-	public boolean exists() {
-		return file.exists();
+	public long length() {
+		return file.length();
 	}
 
 }

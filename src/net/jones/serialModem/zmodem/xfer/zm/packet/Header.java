@@ -67,24 +67,12 @@ public class Header extends ZMPacket {
 	}
 	
 	
-	public ZModemCharacter type(){
-		return type;
-	}
-	
 	public Format format(){
 		return format;
 	}
 	
-	public void setFlags(byte[] flags){
-		data = Arrays.copyOf(flags, flags.length);
-	}
-	
 	public byte[] getFlags(){
 		return data;
-	}
-	
-	public void setPos(int num){
-		data = Arrays.fromInt(num, Arrays.Endianness.Little);
 	}
 	
 	public int getPos(){
@@ -121,10 +109,22 @@ public class Header extends ZMPacket {
 		return buff.asByteBuffer();
 		
 	}
-
+	
+	public void setFlags(byte[] flags){
+		data = Arrays.copyOf(flags, flags.length);
+	}
+	
+	public void setPos(int num){
+		data = Arrays.fromInt(num, Arrays.Endianness.Little);
+	}
+	
 	@Override
 	public String toString() {
 		return type+", "+format+", "+"{"+data[0]+","+data[1]+","+data[2]+","+data[3]+"}";
+	}
+
+	public ZModemCharacter type(){
+		return type;
 	}
 	
 }

@@ -2,6 +2,7 @@ package net.jones.serialModem.modem;
 
  
 
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.logging.Level;
@@ -14,40 +15,13 @@ import net.jones.serialModem.zmodem.YModem;
 
 public class SocketServerModem extends SerialModem {
 
-	private ServerSocket svrSock = null;
-	private Socket cntSock = null; 
-	private int port = -1; 
-	
-	void startSession() throws Exception {
-		
-		try { if(cntSock != null) cntSock.close();}  catch (Exception e) {}		
-		try { if(svrSock != null) svrSock.close();}  catch (Exception e) {}
-		
-		buildMenu();
-		svrSock = new ServerSocket(port);
-		lg.info("Socket Server Modem Restarted on port: "+port);
-		cntSock = svrSock.accept();
-		srOut  = cntSock.getOutputStream();		
-		srIn   = new ModemInputStream(cntSock.getInputStream());
-		yModem = new YModem(srIn, srOut);
-		xModem = new XModem(srIn, srOut);
-			
-		srOut.write(CLEAR);
-		srOut.write(header);
-		srOut.write(menu);
-
-		lg.info("Socket Server Modem - connecton");
-
-		while (true) {
-			if(disconnected) {								
-				srOut.write((PROMPT).getBytes());
-				if(! processCommand(getStringFromPort(false).trim())) 
-					srOut.write((CONFAIL).getBytes());
-
-			} 
-			Thread.sleep(1000);  
-		}
+	public static void main(String[] args)  {
+			(new SocketServerModem()).go(9090);
 	}
+	private ServerSocket svrSock = null; 
+	private Socket cntSock = null; 
+	
+	private int port = -1;
 	
 	
 	public void go(int pport) {
@@ -60,7 +34,7 @@ public class SocketServerModem extends SerialModem {
 			try {		
 				startSession();
 			} catch (Exception e) {
-				lg.log(Level.WARNING, e.getMessage());				
+				lg.log(Level.SEVERE,"SocketServer:"+pport, e);					
 
 			} finally {
 				try {srIn.close();}     catch (Exception e) {}
@@ -75,9 +49,45 @@ public class SocketServerModem extends SerialModem {
 		}
 	}
 	
+	void startSession() throws Exception {
+		
+		try { if(cntSock != null) cntSock.close();}  catch (Exception e) {}		
+		try { if(svrSock != null) svrSock.close();}  catch (Exception e) {}
+		
+		buildMenu();
+		svrSock = new ServerSocket(port);
+		lg.info("Socket Server Modem Restarted on port: "+port);
+		cntSock = svrSock.accept();
+		srOut  = cntSock.getOutputStream();		
+		srIn   = new TimerInputStream(cntSock.getInputStream());
+		yModem = new YModem(srIn, srOut);
+		xModem = new XModem(srIn, srOut);
+			
+		srOut.write(CLEAR);
+		srOut.write(header);
+
+		lg.info("Socket Server Modem - connecton");
+
+		while (true) {
+			if(disconnected) {								
+				srOut.write((PROMPT).getBytes());
+				if(! processCommand(getStringFromPort(false).trim())) 
+					srOut.write((CONFAIL).getBytes());
+
+			} 
+			Thread.sleep(1000);  
+		}
+	}
 	
-	public static void main(String[] args)  {
-			(new SocketServerModem()).go(9090);
+	protected int userPassword() throws IOException {
+		cntSock.getOutputStream().write(bbs.password.getBytes());
+		cntSock.getOutputStream().flush();
+		return -1;
+	}
+	protected int userUserID() throws IOException {
+		cntSock.getOutputStream().write(bbs.user.getBytes());
+		cntSock.getOutputStream().flush();
+		return -1;
 	}
 
 }

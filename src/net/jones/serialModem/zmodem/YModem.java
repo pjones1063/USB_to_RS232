@@ -36,40 +36,13 @@ public class YModem {
         this.modem = new Modem(inputStream, outputStream);
     }
 
-    /**
-     * Send a file.<br/>
-     * <p>
-     * This method support correct thread interruption, when thread is interrupted "cancel of transmission" will be send.
-     * So you can move long transmission to other thread and interrupt it according to your algorithm.
-     *
-     * @param file
-     * @throws java.io.IOException
-     */
-    public void send(Path file) throws IOException {
-
-        //open file
-        try (DataInputStream dataStream = new DataInputStream(Files.newInputStream(file))) {
-
-            boolean useCRC16 = modem.waitReceiverRequest();
-            XCRC crc;
-             if (useCRC16)
-                crc = new CRC16();
-             else
-                crc = new CRC8();
-
-            //send block 0
-            BasicFileAttributes readAttributes = Files.readAttributes(file, BasicFileAttributes.class);
-            String fileNameString = file.getFileName().toString() + (char)0 + ((Long) Files.size(file)).toString()+" "+ Long.toOctalString(readAttributes.lastModifiedTime().toMillis() / 1000);
-            byte[] fileNameBytes = Arrays.copyOf(fileNameString.getBytes(), 128);
-            modem.sendBlock(0, Arrays.copyOf(fileNameBytes, 128), 128, crc);
-
-            modem.waitReceiverRequest();
-            //send data
-            byte[] block = new byte[1024];
-            modem.sendDataBlocks(dataStream, 1, crc, block);
-
-            modem.sendEOT();
+    public void batchSend(File... files) throws IOException {
+        for (File file : files) {
+        	if(!file.isDirectory())
+        		send(Paths.get(file.toURI()));
         }
+
+        sendBatchStop();
     }
 
     /**
@@ -89,56 +62,6 @@ public class YModem {
         sendBatchStop();
     }
 
-    public void batchSend(File... files) throws IOException {
-        for (File file : files) {
-        	if(!file.isDirectory())
-        		send(Paths.get(file.toURI()));
-        }
-
-        sendBatchStop();
-    }
-    
-    private void sendBatchStop() throws IOException {
-        boolean useCRC16 = modem.waitReceiverRequest();
-        XCRC crc;
-        if (useCRC16)
-            crc = new CRC16();
-        else
-            crc = new CRC8();
-
-        //send block 0
-        byte[] bytes = new byte[128];
-        modem.sendBlock(0, bytes, bytes.length, crc);
-    }
-
-    /**
-     * Receive single file <br/>
-     * <p>
-     * This method support correct thread interruption, when thread is interrupted "cancel of transmission" will be send.
-     * So you can move long transmission to other thread and interrupt it according to your algorithm.
-     *
-     * @param directory directory where file will be saved
-     * @return path to created file
-     * @throws java.io.IOException
-     */
-    public Path receiveSingleFileInDirectory(Path directory) throws IOException {
-        return receive(directory, true);
-    }
-
-    /**
-     * Receive files in batch mode <br/>
-     * <p>
-     * This method support correct thread interruption, when thread is interrupted "cancel of transmission" will be send.
-     * So you can move long transmission to other thread and interrupt it according to your algorithm.
-     *
-     * @param directory directory where files will be saved
-     * @throws java.io.IOException
-     */
-    public void receiveFilesInDirectory(Path directory) throws IOException {
-        while (receive(directory, true) != null) {
-        }
-    }
-
     /**
      * Receive path <br/>
      * <p>
@@ -152,7 +75,7 @@ public class YModem {
     public Path receive(Path path) throws IOException {
         return receive(path, false);
     }
-
+    
     private Path receive(Path path, boolean inDirectory) throws IOException {
         DataOutputStream dataOutput = null;
         Path filePath;
@@ -211,5 +134,82 @@ public class YModem {
             }
         }
         return filePath;
+    }
+
+    /**
+     * Receive files in batch mode <br/>
+     * <p>
+     * This method support correct thread interruption, when thread is interrupted "cancel of transmission" will be send.
+     * So you can move long transmission to other thread and interrupt it according to your algorithm.
+     *
+     * @param directory directory where files will be saved
+     * @throws java.io.IOException
+     */
+    public void receiveFilesInDirectory(Path directory) throws IOException {
+        while (receive(directory, true) != null) {
+        }
+    }
+
+    /**
+     * Receive single file <br/>
+     * <p>
+     * This method support correct thread interruption, when thread is interrupted "cancel of transmission" will be send.
+     * So you can move long transmission to other thread and interrupt it according to your algorithm.
+     *
+     * @param directory directory where file will be saved
+     * @return path to created file
+     * @throws java.io.IOException
+     */
+    public Path receiveSingleFileInDirectory(Path directory) throws IOException {
+        return receive(directory, true);
+    }
+
+    /**
+     * Send a file.<br/>
+     * <p>
+     * This method support correct thread interruption, when thread is interrupted "cancel of transmission" will be send.
+     * So you can move long transmission to other thread and interrupt it according to your algorithm.
+     *
+     * @param file
+     * @throws java.io.IOException
+     */
+    public void send(Path file) throws IOException {
+
+        //open file
+        try (DataInputStream dataStream = new DataInputStream(Files.newInputStream(file))) {
+
+            boolean useCRC16 = modem.waitReceiverRequest();
+            XCRC crc;
+             if (useCRC16)
+                crc = new CRC16();
+             else
+                crc = new CRC8();
+
+            //send block 0
+            BasicFileAttributes readAttributes = Files.readAttributes(file, BasicFileAttributes.class);
+            String fileNameString = file.getFileName().toString() + (char)0 + ((Long) Files.size(file)).toString()+" "+ Long.toOctalString(readAttributes.lastModifiedTime().toMillis() / 1000);
+            byte[] fileNameBytes = Arrays.copyOf(fileNameString.getBytes(), 128);
+            modem.sendBlock(0, Arrays.copyOf(fileNameBytes, 128), 128, crc);
+
+            modem.waitReceiverRequest();
+            //send data
+            byte[] block = new byte[1024];
+            modem.sendDataBlocks(dataStream, 1, crc, block);
+
+            modem.sendEOT();
+        }
+    }
+
+    private void sendBatchStop() throws IOException {
+        boolean useCRC16 = modem.waitReceiverRequest();
+        XCRC crc;
+        if (useCRC16)
+            crc = new CRC16();
+        else
+            crc = new CRC8();
+
+        //send block 0
+        byte[] bytes = new byte[128];
+        modem.sendBlock(0, bytes, bytes.length, crc);
     }
 }

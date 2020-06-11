@@ -12,35 +12,35 @@ public enum ZMOptions {
 	ESC8   (0x80),	/* Receiver expects 8th bit to be escaped */
 	ZCBIN  (0x01);
 	
-	private byte value;
-	private ZMOptions(char b){
-		value = (byte)b;
-	}
-	private ZMOptions(int b){
-		value =(byte) b;
-	}
-	private ZMOptions(byte b){
-		value = b;
-	}
-	
-	
-	public byte value() {
-		return value;
-	}
-	
-	public static byte with(ZMOptions ... oo){
-		byte r=0;
-		for(ZMOptions o:oo)
-			r = (byte)(r|o.value());
-		return r;
-	}
-	
 	public static ZMOptions forbyte(byte b) {
 		for(ZMOptions zb : values()){
 			if(zb.value()==b)
 				return zb;
 		}
 		return null;
+	}
+	public static byte with(ZMOptions ... oo){
+		byte r=0;
+		for(ZMOptions o:oo)
+			r = (byte)(r|o.value());
+		return r;
+	}
+	private byte value;
+	private ZMOptions(byte b){
+		value = b;
+	}
+	
+	
+	private ZMOptions(char b){
+		value = (byte)b;
+	}
+	
+	private ZMOptions(int b){
+		value =(byte) b;
+	}
+	
+	public byte value() {
+		return value;
 	}
 
 }

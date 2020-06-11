@@ -12,8 +12,8 @@ public class CRC {
 			numbytes=s; 
 			initial = i;
 		}
-		public int size(){ return numbytes; }
 		public int initial(){ return initial; }
+		public int size(){ return numbytes; }
 	}
 	
 	/**
@@ -91,16 +91,6 @@ public class CRC {
 		0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 	};
 	
-	private static int updcrc(int cp,int crc){
-		//System.out.printf("updcrc: %08x / %08x\n",cp,crc);
-		return ( crctab[(crc >> 8) & 0xff] ^ (crc << 8) ^ cp );
-	}
-	
-	private static int updcrc32(int b,int c){
-		return (cr3tab[(c ^ b) & 0xff] ^ ((c >> 8) & 0x00FFFFFF));
-	}
-	
-	
 	public static byte[] arrayCRC(Type t,byte[] bytes){
 		switch(t){
 		case CRC16:
@@ -110,6 +100,7 @@ public class CRC {
 		}
 		return new byte[0];
 	}
+	
 	/**
 	 * @param bytes
 	 * @return
@@ -122,17 +113,7 @@ public class CRC {
 		return bb;
 
 	}
-
-	public static int CRC16(byte[] bytes){
-		int crc = 0;
-		
-		for(byte b:bytes)
-			crc = updcrc(0xff & b,crc);
-		
-		crc = updcrc(0,updcrc(0,crc));
-				
-		return crc;
-	}
+	
 	
 	/**
 	 * @param bytes
@@ -148,7 +129,17 @@ public class CRC {
 		return bb;
 
 	}
-	
+	public static int CRC16(byte[] bytes){
+		int crc = 0;
+		
+		for(byte b:bytes)
+			crc = updcrc(0xff & b,crc);
+		
+		crc = updcrc(0,updcrc(0,crc));
+				
+		return crc;
+	}
+
 	public static int CRC32(byte[] bytes){
 		int crc = 0xFFFFFFFF;
 		
@@ -158,28 +149,21 @@ public class CRC {
 		return ~crc;
 	}
 	
+	private static int updcrc(int cp,int crc){
+		//System.out.printf("updcrc: %08x / %08x\n",cp,crc);
+		return ( crctab[(crc >> 8) & 0xff] ^ (crc << 8) ^ cp );
+	}
+	
+	private static int updcrc32(int b,int c){
+		return (cr3tab[(c ^ b) & 0xff] ^ ((c >> 8) & 0x00FFFFFF));
+	}
+	
 	private Type type;
 	private int crc;
 	
 	public CRC(Type t){
 		type = t;
 		crc  = type.initial();
-	}
-	
-	public void update(byte b){
-		switch(type){
-		case CRC16:
-			crc = updcrc(0xff&b,crc);
-			break;
-		case CRC32:
-			crc = updcrc32((0xff&b),crc);
-			break;
-		}
-	}
-	
-	public void update(byte[] array){
-		for(byte b: array)
-			update(b);
 	}
 	
 	public void finalize(){
@@ -192,10 +176,6 @@ public class CRC {
 			break;
 		}
 		//System.out.printf("crc: %08x\n",crc);
-	}
-	
-	public int size(){
-		return type.size();
 	}
 	
 	public byte[] getBytes(){
@@ -216,9 +196,29 @@ public class CRC {
 		}
 		return new byte[0];
 	}
-
+	
+	public int size(){
+		return type.size();
+	}
+	
 	public Type type() {
 		return type;
+	}
+	
+	public void update(byte b){
+		switch(type){
+		case CRC16:
+			crc = updcrc(0xff&b,crc);
+			break;
+		case CRC32:
+			crc = updcrc32((0xff&b),crc);
+			break;
+		}
+	}
+
+	public void update(byte[] array){
+		for(byte b: array)
+			update(b);
 	}
 	
 }

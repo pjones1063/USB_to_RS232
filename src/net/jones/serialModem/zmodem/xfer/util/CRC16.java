@@ -42,11 +42,6 @@ public class CRC16 implements XCRC {
     };
 
     @Override
-    public int getCRCLength() {
-        return 2;
-    }
-
-    @Override
     public long calcCRC(byte[] block) {
         int crc = 0x0000;
         for (byte b : block) {
@@ -54,5 +49,10 @@ public class CRC16 implements XCRC {
         }
 
         return crc;
+    }
+
+    @Override
+    public int getCRCLength() {
+        return 2;
     }
 }
