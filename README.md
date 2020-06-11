@@ -10,6 +10,8 @@
 
  * Purchase a USB to RS232 Adapter with PL2303 Chipset (on Amazon)
  
+ * If using an 850 interface - build db9 null modem adapter. See nullmodem-atari850-db9-db9.png for pin layout.
+  
  * Install java JVM   
        On Raspberry Pi/Debian run  $ sudo apt-get install oracle-java8-jdk  
  
@@ -55,14 +57,13 @@
    *    lsi --> list inbound folder
    *    lso --> list outbound folder
    *    ssh (user@hostname) -->  ssh to host 
-   *    ysend --> YMODEM batch dowload
+   *    ysend --> YMODEM batch download
    *    yrecv --> YMODEM batch upload 
-   *    xsend (filename) --> XMODEM dowload
+   *    xsend (filename) --> XMODEM download
    *    xrecv (filename) --> XMODEM upload 
-   *    timmer --> set on/off inactive timer
+   *    timer --> set on/off inactive timer
 
 -------------------------------------------------------------
-
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published by
@@ -77,5 +78,3 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/
     
-    
-

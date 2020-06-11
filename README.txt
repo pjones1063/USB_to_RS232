@@ -6,6 +6,9 @@
 
 -Purchase a USB to RS232 Adapter with PL2303 Chipset (on Amazon)
 
+-If using an 850 interface - build db9 null modem adapter. 
+     See nullmodem-atari850-db9-db9.png for pin layout.
+
 -Install java JVM on linux and/or Pi host
 
 -Install the librxtx-java API -> from http://rxtx.qbang.org/wiki/index.php/Main_Page
@@ -27,8 +30,6 @@
 
 -Good Luck!
 
-
-
 ------------------------------------------------------------
 
  Commands
@@ -42,9 +43,9 @@
        lsi --> list inbound folder
        lso --> list outbound folder
        ssh (user@hostname) -->  ssh to host 
-       ysend --> YMODEM batch dowload
+       ysend --> YMODEM batch download
        yrecv --> YMODEM batch upload 
-       xsend (filename) --> XMODEM dowload
+       xsend (filename) --> XMODEM download
        xrecv (filename) --> XMODEM upload 
        timmer --> set on/off inactive timer
 
