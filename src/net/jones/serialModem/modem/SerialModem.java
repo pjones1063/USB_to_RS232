@@ -438,7 +438,7 @@ public class SerialModem {
 		} catch (Exception e) {
 			lg.log(Level.WARNING, e.getMessage(), e);
 			try {if(channel != null && channel.isConnected()) channel.disconnect();} catch (Exception n) {}
-			srOut.write((CRLF+e.getMessage()+CRLF).getBytes());
+			srOut.write((CRLF + e.getStackTrace() + CRLF).getBytes());
 			disconnected = true;
 			esc = false;
 			return false;
@@ -463,7 +463,7 @@ public class SerialModem {
 		} catch (Exception e) {
 			lg.log(Level.WARNING, e.getMessage(), e);
 			try {if(socket != null && socket.isConnected()) socket.close();} catch (Exception n) {}
-			srOut.write(e.getMessage().getBytes());
+			srOut.write( (CRLF + e.getStackTrace() + CRLF).getBytes() );
 			disconnected = true;
 			esc = false;
 			return false;
@@ -720,7 +720,7 @@ public class SerialModem {
 	} 
 
 
-	protected boolean processCommand(String command) throws IOException  {
+	protected boolean processCommand(String command) throws Exception  {
 
 		String opt = "";
 		if(command == null || command.equals("")) return true;
