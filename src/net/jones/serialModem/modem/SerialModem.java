@@ -20,10 +20,6 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
-import java.util.logging.StreamHandler;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -48,12 +44,60 @@ import com.jcraft.jsch.Session;
 
 
 public class SerialModem {
+	
+	
+	protected final static char   LF       = '\n';	
+	protected final static char   CR       = '\r';
+	protected final static char   ST	   = '*';		
+	protected final static String CRLF     = "\r\n";
+	protected final static String SPCE     = "     ";
+    
+	protected final static String QT       = "`";
+	
+	protected final static String splush   = "file:///home/pi/banner.asc";
+	protected final static String dialxml  =  "/home/pi/dialdirectory.xml";
+	protected final static String inbound  = "/home/pi/Transfer/inbound";
+	protected final static String outbound = "/home/pi/Transfer/outbound";
+	protected final static String _part    = "/part";
+	
+	protected final static byte [] CLEAR   = new byte[] {27,91,50,74};
+	protected final static int TO          = 30000;
+	protected final static int SSHPORT     = 22;
+	
+	protected final static String CONFAIL  = CRLF+CRLF+"Connection Failed"+CRLF;
+	protected final static String CONEXIT  = CRLF+"Exiting connection"+CRLF;	
+	protected final static String CONECT   = CRLF+CRLF+"Connecting....."+CRLF;
+	protected final static String HUH      = CRLF+CRLF+" ** Huh?!"+CRLF;
+	protected final static String PROMPT   = CRLF+CRLF+" -> ";
+	protected final static String SLIST    = CRLF+CRLF+"  Num    Name  -  Host" +CRLF+
+			                                           "  ---    ---------------------------------" +CRLF;
 
- 	protected class BBS {
+	protected final Hashtable<Integer, BBSTelnetHost> bbsHostTable  = new Hashtable<Integer, BBSTelnetHost>();
+	protected boolean  disconnected = true, timerb = true;
+	protected Socket   socket;
+	protected InputStream srIn;
+	protected OutputStream srOut;
+	protected Channel  channel;
+	protected YModem  yModem;
+	protected XModem  xModem;
+	protected  BBSTelnetHost bbsHost;
+	
+	protected long timer;
+	
+	protected byte [] header,help;
+	
+	protected int opts;
+
+	protected boolean esc = false;
+	
+	protected CommPortIdentifier portIdentifier;	
+	
+
+ 	protected class BBSTelnetHost {
 		public int number, port;
 		public String host, name,user, password;
 		public boolean ssh;
-		public BBS(String bb) {
+		public BBSTelnetHost(String bb) {
 			ssh = false;
 			user = "";
 			password = "";		
@@ -76,7 +120,7 @@ public class SerialModem {
 			
 		}
 
-		public BBS(String bbsName, String bbsHost, String bbsPort, String bbsProtocol, String bbsLogin, String bbsPassword ) {
+		public BBSTelnetHost(String bbsName, String bbsHost, String bbsPort, String bbsProtocol, String bbsLogin, String bbsPassword ) {
 			try {
 				name = bbsName;
 				host = bbsHost;
@@ -92,42 +136,30 @@ public class SerialModem {
 			}
 		}
 	}
-	protected class ChannelCloser implements Runnable {
-		Channel channel;
-		public ChannelCloser(Channel chan) { channel = chan; }
-		public void run() {
-			try {
-				while (channel.getExitStatus() == -1 && ! disconnected) {
-					try {Thread.sleep(2000);} catch (Exception e) {}
-				}
-				
-				userExit();
-				
-			} catch (Exception e) {
-				lg.log(Level.SEVERE, e.getMessage(), e);
-			}
-			disconnected = true;
-		}
-	}
-	protected  class TCPReadWrite implements Runnable {
+ 	
+
+	
+	
+	protected  class TelnetThreader implements Runnable {
 		InputStream in;
 		OutputStream out;
-		public TCPReadWrite(InputStream i, OutputStream o) {in = i; out = o;}
+		public TelnetThreader(InputStream i, OutputStream o) {in = i; out = o;}
 		public void run() {
 			try {
 				int b=0;
 				while (!disconnected  && !socket.isClosed()) 
 					if ((b = in.read()) > -1) out.write(b & 0xFF);	
 			} catch (IOException e) {
-				lg.log(Level.SEVERE, e.toString(), e);
+				System.out.println("usbModem->connection closing");
 			}
 			disconnected = true;
 		}
 	}
 	
-	protected class TimerInputStream extends InputStream  {
+	
+	protected class TelnetInputStream extends InputStream  {
 		protected InputStream  inputstream;
-		public TimerInputStream(InputStream mis) {
+		public TelnetInputStream(InputStream mis) {
 			inputstream = mis;
 			esc = false;
 			timer = new Date().getTime() / 1000;	
@@ -135,7 +167,7 @@ public class SerialModem {
 				@Override
 				public void run() {
 					while (true) {						
-						try {Thread.sleep(60000);} catch (Exception e) {}
+						try {Thread.sleep(90000);} catch (Exception e) {}
 						long now = new Date().getTime() / 1000;
 						if(timerb && !disconnected && (now - timer) > (5 * 60) )
 							try {userExit();} catch (Exception e) {}
@@ -156,12 +188,11 @@ public class SerialModem {
 		protected int doMacros(int chr) throws IOException {
 
 			if (!disconnected && esc) {
-			 System.out.println("SerialModem.TimerInputStream.doMacros():" + chr);
 			 if(chr == 45) 
 				 return userExit();
-			 else if (chr == 117 && !bbs.user.isEmpty()) 
+			 else if (chr == 117 && !bbsHost.user.isEmpty()) 
 				  return userUserID();				  
-			 else if (chr == 112 && !bbs.password.isEmpty()) 
+			 else if (chr == 112 && !bbsHost.password.isEmpty()) 
 				  return userPassword();
 			}
 			
@@ -204,59 +235,25 @@ public class SerialModem {
 
 	}	
 	
-	
-	protected final static char   LF       = '\n';
-	
-	protected final static char   CR       = '\r';
-	protected final static char   ST	   = '*';
-	protected final static String CRLF     = "\r\n";
-	protected final static String QT       = "`";
-	protected final static String splush   = "file:///home/pi/banner.asc";
-	protected final static String dialxml  =  "/home/pi/dialdirectory.xml";
-	
-	protected final static String inbound  = "/home/pi/Transfer/inbound";
-	protected final static String outbound = "/home/pi/Transfer/outbound";
-	protected final static String _part    = "/part";
-	//protected final static String _bbs     = "/bbs";
-	
-	protected final static byte [] CLEAR   = new byte[] {27,91,50,74};
-	protected final static int TO          = 30000;
-	protected final static int SSHPORT     = 22;
-	
-	protected final static String CONFAIL  = CRLF+CRLF+"Connection Failed"+CRLF;
-	
-	
-	protected final static String CONECT   = CRLF+CRLF+"Connecting....."+CRLF;
 
-	protected final static String HUH      = CRLF+CRLF+" ** Huh?!"+CRLF;
-	protected final static String PROMPT   = CRLF+CRLF+" PiM > ";
-	protected final static String SLIST    = CRLF+CRLF+"  Num    Name  -  Host" +CRLF+
-			                                           "  ---    ---------------------------------" +CRLF;
-
-
-	protected final Hashtable<Integer, BBS> bbss  = new Hashtable<Integer, BBS>();
-	protected Logger lg;
-	protected boolean  disconnected = true, timerb = true;
-	protected Socket   socket;
-	protected InputStream srIn;
-	protected OutputStream srOut;
-	protected Channel  channel;
-	protected YModem  yModem;
-	protected XModem  xModem;
-	protected  BBS bbs;
-
+ 	
+	protected class SSHChannelCloser implements Runnable {
+		Channel channel;
+		public SSHChannelCloser(Channel chan) { channel = chan; }
+		public void run() {
+			try {
+				while (channel.getExitStatus() == -1 && ! disconnected) {
+					Thread.sleep(1000);
+				}
+				userExit();
+			} catch (Exception e) {
+				System.out.println("usbModem->:"+e.getMessage());
+			}
+			System.out.println("usbModem->connection closing");
+			disconnected = true;
+		}
+	}
 	
-	protected long timer;
-
-	
-	protected byte [] header,help;
-
-	
-	protected int opts;
-
-	protected boolean esc = false;
-	
-	protected CommPortIdentifier portIdentifier;
 	
 
 	protected void buildBBSDirectory () {
@@ -265,13 +262,13 @@ public class SerialModem {
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder builder = factory.newDocumentBuilder();
 			Document document = builder.parse(new File(dialxml));
-			NodeList nodeList = document.getDocumentElement().getElementsByTagName("BBS");
+			NodeList nodeList = document.getDocumentElement().getElementsByTagName("BBSTelnetHost");
 			for (int i = 0; i < nodeList.getLength(); i++) {
 				Node node = nodeList.item(i);
-				if(node.getNodeName().equals("BBS")) {
+				if(node.getNodeName().equals("BBSTelnetHost")) {
 					NamedNodeMap m =  node.getAttributes();
 
-					BBS bbs = new BBS(m.getNamedItem("name").getNodeValue(),
+					BBSTelnetHost bbs = new BBSTelnetHost(m.getNamedItem("name").getNodeValue(),
 							m.getNamedItem("ip").getNodeValue(), 
 							m.getNamedItem("port").getNodeValue(),
 							m.getNamedItem("protocol").getNodeValue(),
@@ -279,31 +276,30 @@ public class SerialModem {
 							m.getNamedItem("password").getNodeValue()
 							);
 
-					bbss.put(new Integer(bbs.number), bbs);
+					bbsHostTable.put(new Integer(bbs.number), bbs);
 				}
 			}
 
 		} catch (Exception e) {
-
-			e.printStackTrace();
+			System.out.println("usbModem->:"+e.getMessage());;
 		}                  
 	}
 
 
 	protected boolean doSaveBBSDirectory (int n, String login, String password) {
 
-		if (!bbss.containsKey(n)) return false;
+		if (!bbsHostTable.containsKey(n)) return false;
 
-		BBS updBBS = bbss.get(n);
+		BBSTelnetHost updBBS = bbsHostTable.get(n);
 		
 		try {
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder builder = factory.newDocumentBuilder();
 			Document document = builder.parse(new File(dialxml));
-			NodeList nodeList = document.getDocumentElement().getElementsByTagName("BBS");
+			NodeList nodeList = document.getDocumentElement().getElementsByTagName("BBSTelnetHost");
 			for (int i = 0; i < nodeList.getLength(); i++) {
 				Node node = nodeList.item(i);
-				if(node.getNodeName().equals("BBS")) {
+				if(node.getNodeName().equals("BBSTelnetHost")) {
 					NamedNodeMap m =  node.getAttributes();
 					if(updBBS.name.equals(m.getNamedItem("name").getNodeValue() )) {
 						m.getNamedItem("login").setNodeValue(login);
@@ -317,7 +313,7 @@ public class SerialModem {
 						
 						Thread.sleep(500);
 						
-						bbss.clear();						
+						bbsHostTable.clear();						
 						buildBBSDirectory();
 						
 						srOut.write((CRLF+" Info saved: "+updBBS.name+CRLF).getBytes());
@@ -329,7 +325,7 @@ public class SerialModem {
 			}
 
 		} catch (Exception e) {
-			lg.log(Level.SEVERE, e.getMessage(), e);
+			System.out.println("usbModem->:"+e.getMessage());
 			return false;
 		}            
 		return false; 
@@ -338,7 +334,7 @@ public class SerialModem {
 
 
 	protected void buildMenu() {
-		bbss.clear();
+		bbsHostTable.clear();
 		opts = 0;
 		try {
 			String splash = new String(Files.readAllBytes(Paths.get(new URI(splush))));
@@ -362,7 +358,7 @@ public class SerialModem {
 			srOut.write(CRLF.getBytes());
 			srOut.flush();
 		} catch (IOException e) {
-			lg.log(Level.SEVERE, e.getMessage(), e);
+			System.out.println("usbModem->:"+e.getMessage());
 			return false;
 		}
 		return true;
@@ -371,44 +367,49 @@ public class SerialModem {
 	
 	protected boolean doConnect(int command) throws IOException {
 		Integer o = new Integer(command);
-		if(!bbss.containsKey(o)) return false;		
-		bbs =  bbss.get(o);	
+		if(!bbsHostTable.containsKey(o)) return false;		
+		bbsHost =  bbsHostTable.get(o);	
 		
-		if(bbs.ssh)
-			return doConnectSSH("bbsuser@"+bbs.host+":"+bbs.port);
+		if(bbsHost.ssh)
+			return doConnectSSH("bbsuser@"+bbsHost.host+":"+bbsHost.port);
 		else
-			return doConnectTelnet(bbs.host, bbs.port);
+			return doConnectTelnet(bbsHost.host, bbsHost.port);
 	}
 
 	
 	protected boolean doConnectSSH(String command) throws IOException   {
 
-		try {if (channel != null && channel.isConnected()) {channel.disconnect();Thread.sleep(2000);}} catch (Exception n) {}
-
 		try {
-				
+			channel.disconnect();
+			Thread.sleep(2000);
+			channel = null;		
+		} catch (Exception n) { }
+
+		
+		try {
+			System.out.println("usbModem->doConnectSSH():" + command);
 			JSch jsch = new JSch();
 			int sp = command.indexOf('@');
-			
+
 			String user = command.substring(0, sp);
 			String host = command.substring(sp+1);
 			int    port = SSHPORT;
-			
+
 			if(host.contains(":")) {
 				try {
-				sp = host.indexOf(":");
-				port = Integer.parseInt(host.substring(sp+1));
-				host = host.substring(0, sp);
+					sp = host.indexOf(":");
+					port = Integer.parseInt(host.substring(sp+1));
+					host = host.substring(0, sp);
 				} catch (Exception n) {} 
 			}
-	
-			srOut.write((CRLF+CRLF+"Password: ").getBytes());
-            String psswd = getStringFromPort(true);
+   
+			srOut.write((CRLF+CRLF+SPCE+"Password: ").getBytes());
+			String psswd = getStringFromPort(true);
 
-			srOut.write((CRLF+CRLF+"Terminal type (ansi): ").getBytes());
-            String pty = getStringFromPort(false);
-            if(null == pty || pty.equals("")) pty = "ansi";
-            		
+			srOut.write((CRLF+CRLF+SPCE+"Terminal type (ansi): ").getBytes());
+			String pty = getStringFromPort(false);
+			if(null == pty || pty.equals("")) pty = "ansi";
+
 			if(host.length() < 1 || user.length() < 1 || psswd.length() < 1) return false;
 			srOut.write(CONECT.getBytes());
 
@@ -418,32 +419,41 @@ public class SerialModem {
 			config.put("StrictHostKeyChecking", "no");
 			session.setConfig(config);
 			session.connect(TO);
-	
+
 			channel = session.openChannel("shell");
+			
 			//((ChannelShell) channel).setPtyType("dumb");
 			//((ChannelShell) channel).setPtyType("xterm");
 			//((ChannelShell) channel).setPtyType("vt100");
-			
+
 			((ChannelShell) channel).setPtyType(pty);
 			((ChannelShell) channel).setEnv("LANG", "ja_JP.eucJP");
 
 			disconnected = false;		 
 			channel.setInputStream(srIn,true);
 			channel.setOutputStream(srOut,true);
-			channel.connect(3000);				 
+			channel.connect(30000);		
 			
-			(new Thread(new ChannelCloser(channel) )).start();
-			
-			
+			(new Thread(new SSHChannelCloser(channel) )).start();
+
+
 		} catch (Exception e) {
-			lg.log(Level.WARNING, e.getMessage(), e);
-			try {if(channel != null && channel.isConnected()) channel.disconnect();} catch (Exception n) {}
-			srOut.write((CRLF + e.getStackTrace() + CRLF).getBytes());
+			System.out.println("usbModem->connection closing"+e.getMessage());
+			srOut.write((CRLF + e.getMessage() + CRLF).getBytes());
+
+			try {
+				if (channel != null && channel.isConnected())
+					channel.disconnect();
+			} catch (Exception n) {
+				System.out.println("usbModem->connection closing"+e.getMessage());
+				srOut.write((CRLF + n.getMessage() + CRLF).getBytes());
+			}
+			
 			disconnected = true;
 			esc = false;
 			return false;
-		} 
-		
+		}
+
 		return true;
 	}
 
@@ -454,16 +464,21 @@ public class SerialModem {
 		try {if(socket != null && socket.isConnected()) socket.close(); Thread.sleep(2000);} catch (Exception n) {}
 
 		try {
+			
+			System.out.println("usbModem->doConnectTelnet():" + host+":"+port);
 			disconnected = false; 
 			socket = new Socket(host, port);
 
-			(new Thread(new TCPReadWrite(srIn, socket.getOutputStream()) )).start();
-			(new Thread(new TCPReadWrite(socket.getInputStream(), srOut) )).start();
+			(new Thread(new TelnetThreader(
+					new TelnetInputStream(srIn),
+					socket.getOutputStream()) )).start();
+			(new Thread(new TelnetThreader(
+					socket.getInputStream(), srOut) )).start();
 
 		} catch (Exception e) {
-			lg.log(Level.WARNING, e.getMessage(), e);
+			System.out.println("usbModem->:"+e.getMessage());
 			try {if(socket != null && socket.isConnected()) socket.close();} catch (Exception n) {}
-			srOut.write( (CRLF + e.getStackTrace() + CRLF).getBytes() );
+			srOut.write( (CRLF + e.getMessage() + CRLF).getBytes() );
 			disconnected = true;
 			esc = false;
 			return false;
@@ -478,6 +493,9 @@ public class SerialModem {
 		timerb = false;
 		Path path;
 		try {
+			
+			System.out.println("usbModem->doConnectXREC():" + file);
+			
 			srOut.write((CRLF+CRLF+" ** XMODEM receiving file "+file+CRLF).getBytes());					
 			srOut.flush();
 			
@@ -488,7 +506,7 @@ public class SerialModem {
 			return true;
 		
 		} catch (Exception e) {
-			lg.log(Level.SEVERE, e.getMessage(), e);
+			System.out.println("usbModem->:"+e.getMessage());
 			srOut.write((CRLF+CRLF+CONFAIL+CRLF).getBytes());
 			disconnected = true;
 			return false;
@@ -500,7 +518,11 @@ public class SerialModem {
 		disconnected = false;
 		timerb = false;
 		Path path;
+		
 		try {
+			
+			System.out.println("usbModem->doConnectXSND():" + file);
+			
 			srOut.write((CRLF+CRLF+" ** XMODEM sending file :"+file+CRLF).getBytes());
 			srOut.flush();
 			
@@ -511,7 +533,7 @@ public class SerialModem {
 			return true;
 		
 		} catch (Exception e) {
-			lg.log(Level.SEVERE, e.getMessage(), e);	
+			System.out.println("usbModem->:"+e.getMessage());
 			srOut.write((CRLF+CRLF+CONFAIL+CRLF).getBytes());
 			disconnected = true;
 			return false;
@@ -524,6 +546,9 @@ public class SerialModem {
 		timerb = false;
 		Path path;
 		try {			
+			
+			System.out.println("usbModem->doConnectYREC():");
+			
 			srOut.write((CRLF+CRLF+" ** YMODEM batch receive to :"+inbound+CRLF).getBytes());
 			srOut.flush();
 			path = Paths.get(new URI("file://"+inbound));
@@ -533,7 +558,7 @@ public class SerialModem {
 			return true;
 		
 		} catch (Exception e) {
-			lg.log(Level.SEVERE, e.getMessage(), e); 
+			System.out.println("usbModem->:"+e.getMessage());
 			srOut.write((CRLF+CRLF+CONFAIL+CRLF).getBytes());
 			disconnected = true;
 			return false;
@@ -545,6 +570,8 @@ public class SerialModem {
 		disconnected = false;
 		timerb = false;
 		try {
+			
+			System.out.println("usbModem->doConnectYSND():");
 			srOut.write((CRLF+CRLF+" ** YMODEM batch send from :"+outbound+CRLF).getBytes());
 			srOut.flush();
 			
@@ -555,7 +582,7 @@ public class SerialModem {
 			return true;
 		
 		} catch (Exception e) {
-			lg.log(Level.SEVERE, e.getMessage(), e);	
+			System.out.println("usbModem->:"+e.getMessage());	
 			srOut.write((CRLF+CRLF+CONFAIL+CRLF).getBytes());
 			disconnected = true;
 			return false;
@@ -568,7 +595,7 @@ public class SerialModem {
 			srOut.write(help);
 			srOut.flush();
 		} catch (IOException e) {
-			lg.log(Level.SEVERE, e.getMessage(), e);
+			System.out.println("usbModem->:"+e.getMessage());
 			return false;
 		}
 		return true;
@@ -586,7 +613,7 @@ public class SerialModem {
 			srOut.write((CRLF+CRLF).getBytes());
 			
 		} catch (IOException e) {
-			lg.log(Level.SEVERE, e.getMessage(), e);			
+			System.out.println("usbModem->:"+e.getMessage());			
 			return false;
 		}
 		return true;
@@ -596,11 +623,12 @@ public class SerialModem {
 
 	protected boolean doServerDate() {
 		try {
+			System.out.println("usbModem->doServerDate():");
 			srOut.write( (new SimpleDateFormat("yyyy MM dd kk mm").format(new Date())).getBytes());
 			srOut.write(CRLF.getBytes());
 			srOut.flush();
 		} catch (IOException e) {
-			lg.log(Level.SEVERE, e.getMessage(), e);
+			System.out.println("usbModem->:"+e.getMessage());
 			return false;
 		}
 		return true;
@@ -610,13 +638,14 @@ public class SerialModem {
 	
 	protected boolean doServerY2KDate() {
 		try {
+			System.out.println("usbModem->doServerDate():");
 			Date d = new Date();
 			int year30 =  Integer.parseInt(new SimpleDateFormat("yyyy").format(d)) - 30;
 			srOut.write(( Integer.toString(year30) + new SimpleDateFormat(" MM dd kk mm").format(d)).getBytes());
 			srOut.write(CRLF.getBytes());
 			srOut.flush();
 		} catch (IOException e) {
-			lg.log(Level.SEVERE, e.getMessage(), e);
+			System.out.println("usbModem->:"+e.getMessage());
 			return false;
 		}
 		return true;
@@ -625,22 +654,20 @@ public class SerialModem {
 	
 	protected boolean doSreachBBSListing(String src) throws IOException {
 
-		Enumeration<BBS> bbsEnum = bbss.elements();
+		Enumeration<BBSTelnetHost> bbsEnum = bbsHostTable.elements();
 		DecimalFormat f = new DecimalFormat("0000");
 		StringBuffer mn = new StringBuffer("");
 		int i = 0;
 		while (bbsEnum.hasMoreElements() && i < 25) {
-			BBS bbs = bbsEnum.nextElement();
+			BBSTelnetHost bbs = bbsEnum.nextElement();
 			String name = bbs.name.toLowerCase();
-			if (name.contains(src) && bbs.port > 0) {		
-				
+			if (name.contains(src) && bbs.port > 0) {						
 				if(bbs.password != null &&  bbs.password.length() > 0)
 					mn.append("* " + f.format(bbs.number) + " - " + bbs.name.trim()
 							+ " - " + bbs.host.trim() + ":" + bbs.port  + CRLF);
 				else 
 					mn.append("  " + f.format(bbs.number) + " - " + bbs.name.trim()
 							+ " - " + bbs.host.trim() + ":" + bbs.port  + CRLF);
-
 			}
 		}
 
@@ -663,7 +690,7 @@ public class SerialModem {
 			srOut.write(CRLF.getBytes());
 			srOut.flush();
 		} catch (IOException e) {
-			lg.log(Level.SEVERE, e.getMessage(), e);
+			System.out.println("usbModem->:"+e.getMessage());
 			return false;
 		}
 		return true;
@@ -689,7 +716,7 @@ public class SerialModem {
 			}			
 
 		} catch (IOException e) {
-			lg.log(Level.SEVERE, e.getMessage(), e);
+			System.out.println("usbModem->:"+e.getMessage());
 			return "";
 		}
 		
@@ -699,15 +726,12 @@ public class SerialModem {
 	
 	public void go(final String portname, final int bRate) {
 		
-		lg = Logger.getLogger( SerialModem.class.getName() );
-		lg.setLevel(Level.ALL);
-		lg.addHandler( new StreamHandler(System.out, new SimpleFormatter()));
-	    
+ 
 		while (true) {
 			try {
 				startSession(portname, bRate);				
 			} catch (Exception e) {
-  				lg.log(Level.SEVERE,"Serial:"+portname+":"+bRate, e);				
+				System.out.println("usbModem->:"+e.getMessage());				
 			} finally {
 				try {srIn.close();}  catch (Exception e) {}
 				try {srOut.close();} catch (Exception e) {}
@@ -751,7 +775,7 @@ public class SerialModem {
 			return doServerY2KDate();
 
 		} else if(( (stCount == 3 && "atdt".equals(opt)) 
-				 || (stCount == 3 && "bbs".equals(opt)))
+				 || (stCount == 3 && "bbsHost".equals(opt)))
 							&&  StringUtils.isNumeric(cmd.get(2)) ) {
 			
 			return doConnectTelnet(cmd.get(1), Integer.parseInt(cmd.get(2)));
@@ -808,14 +832,15 @@ public class SerialModem {
 				SerialPort.PARITY_NONE);
 		
 		srOut  = serialPort.getOutputStream();
-		srIn   = new TimerInputStream(serialPort.getInputStream());
+		srIn   = serialPort.getInputStream();
 		
 		yModem = new YModem(srIn, srOut);
 		xModem = new XModem(srIn, srOut);		
+		
 		srOut.write(CLEAR);
 		srOut.write(header);
 
-		lg.info("Serial Modem Restarted: "+portName+ " @ "+bRate);
+		System.out.println("usbModem->Serial Modem Restarted: "+portName+ " @ "+bRate);
 		
 		while (true) {
 			if(disconnected) {								
@@ -824,16 +849,17 @@ public class SerialModem {
 					srOut.write((CONFAIL).getBytes());
 
 			} 
-			Thread.sleep(1000);  
+			Thread.sleep(250);  
 		}	
 	}
 	
 	
 	
-	protected int  userExit()  {			
+	protected int  userExit() {			
 		disconnected = true;
 		esc = false;
-		try {Thread.sleep(500); } catch (InterruptedException e) {}
+		try { srOut.write((CONEXIT).getBytes()); } catch (IOException e1) { }
+		try {Thread.sleep(250); } catch (InterruptedException e) {}
 		try {if(socket  != null && socket.isConnected()) socket.close();} catch (Exception n) {}
 		try {if(channel != null && channel.isConnected()){channel.disconnect();channel.getSession().disconnect();}} catch (Exception n) {}		
 		return -1;
@@ -841,7 +867,8 @@ public class SerialModem {
 
 	
 	protected int userPassword() throws IOException {
-		socket.getOutputStream().write(bbs.password.getBytes());
+		socket.getOutputStream().write((char)0x08);
+		socket.getOutputStream().write(bbsHost.password.getBytes());
 		socket.getOutputStream().flush();
 		return -1;
 	}
@@ -850,7 +877,8 @@ public class SerialModem {
 	
 	
 	protected int userUserID() throws IOException {
-		socket.getOutputStream().write(bbs.user.getBytes());
+		socket.getOutputStream().write((char)0x08);
+		socket.getOutputStream().write(bbsHost.user.getBytes());
 		socket.getOutputStream().flush();
 		return -1;
 	}

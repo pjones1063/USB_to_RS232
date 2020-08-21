@@ -27,11 +27,11 @@ public class BatchStartUp {
 		final Options options = new Options();
 		
 		options.addOption( 
-				Option.builder("s").argName("serial").longOpt("serial name").required(true)
+				Option.builder("s").argName("serial").longOpt("serial name").required(false)
 				.hasArg(true).numberOfArgs(1).desc("Serial Port Name").build());
 		
 		options.addOption( 
-				Option.builder("b").argName("baud").longOpt("baud").required(true)
+				Option.builder("b").argName("baud").longOpt("baud").required(false)
 				.hasArg(true).numberOfArgs(1).desc("Serial Baud Rate").build());
 
 		options.addOption( 
@@ -44,20 +44,22 @@ public class BatchStartUp {
 
 		try {
 			
-			 CommandLineParser cmdLineParser = new DefaultParser();  
-			 CommandLine commandLine  = cmdLineParser.parse(options, args);
+			CommandLineParser cmdLineParser = new DefaultParser();  
+			CommandLine commandLine  = cmdLineParser.parse(options, args);
 
-			 portName = commandLine.getOptionValue('s');		
-			 bRate =  Integer.parseInt(commandLine.getOptionValue('b'));
-			 String sv = commandLine.getOptionValue('l');
-			 String cl = commandLine.getOptionValue('c');
+			portName = commandLine.getOptionValue('s');		
+			
+			String br = commandLine.getOptionValue('b');
+			String sv = commandLine.getOptionValue('l');
+			String cl = commandLine.getOptionValue('c');
 
+			if(StringUtils.isNumeric(br))  bRate   = Integer.parseInt(br);
 			if(StringUtils.isNumeric(sv))  pServer = Integer.parseInt(sv);
 			if(StringUtils.isNumeric(cl))  pClient = Integer.parseInt(cl);
 
-
 			printUsage(options);
 
+			if(bRate > 10)
 			(new Thread(new Runnable() {
 				@Override
 				public void run() {
@@ -72,7 +74,6 @@ public class BatchStartUp {
 						(new SocketServerModem()).go(pServer);
 					}
 				})).start();
-
 
 			if(pClient > 10)
 				(new Thread(new Runnable() {

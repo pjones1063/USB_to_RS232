@@ -3,11 +3,6 @@ package net.jones.serialModem.modem;
  
 import java.io.IOException;
 import java.net.Socket;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
-import java.util.logging.StreamHandler;
-
 import net.jones.serialModem.zmodem.XModem;
 import net.jones.serialModem.zmodem.YModem;
 
@@ -22,17 +17,13 @@ public class SocketModem extends SerialModem {
 	private  int port = -1;
 	
 	public void go(int pport) {	
-		
 		port = pport;
-		lg = Logger.getLogger( SocketModem.class.getName() );
-		lg.setLevel(Level.ALL);
-		lg.addHandler( new StreamHandler(System.out, new SimpleFormatter()));		 
 		
 		while (true) {
 			try {
 				startSession();
 			} catch (Exception e) {
-  				lg.log(Level.SEVERE,"Socket:"+pport, e);				
+				System.out.println("usbModem->:"+e.getMessage());			
 	
 			} finally {
 					try {srIn.close();}  catch (Exception e) {}
@@ -47,11 +38,11 @@ public class SocketModem extends SerialModem {
 	void startSession() throws Exception {
 		
 		buildMenu();
-		connectionSocket =  new Socket("localhost", port);		
-		lg.info("Socket Modem Restarted on: localhost:" + port);
+		connectionSocket =  new Socket("localhost", port);	
+		System.out.println("usbModem->Socket Modem Restarted on: localhost:" + port);
 
 		srOut  = connectionSocket.getOutputStream();
-		srIn   = new TimerInputStream(connectionSocket.getInputStream());
+		srIn   = connectionSocket.getInputStream();
 		yModem = new YModem(srIn, srOut);
 		xModem = new XModem(srIn, srOut);
 		
@@ -65,19 +56,19 @@ public class SocketModem extends SerialModem {
 					srOut.write((CONFAIL).getBytes());
 
 			} 
-			Thread.sleep(1000);  
+			Thread.sleep(250);  
 		}
 	}
 	
 	protected int userPassword() throws IOException {
-		connectionSocket.getOutputStream().write(bbs.password.getBytes());
+		connectionSocket.getOutputStream().write(bbsHost.password.getBytes());
 		connectionSocket.getOutputStream().flush();
 		return -1;
 	}
 	
 	
 	protected int userUserID() throws IOException {
-		connectionSocket.getOutputStream().write(bbs.user.getBytes());
+		connectionSocket.getOutputStream().write(bbsHost.user.getBytes());
 		connectionSocket.getOutputStream().flush();
 		return -1;
 	}

@@ -1,14 +1,8 @@
 package net.jones.serialModem.modem;
 
- 
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
-import java.util.logging.StreamHandler;
 
 import net.jones.serialModem.zmodem.XModem;
 import net.jones.serialModem.zmodem.YModem;
@@ -23,18 +17,14 @@ public class SocketServerModem extends SerialModem {
 	
 	private int port = -1;
 	
-	
 	public void go(int pport) {
 		port = pport;		
-		lg = Logger.getLogger( SocketModem.class.getName() );
-		lg.setLevel(Level.ALL);
-		lg.addHandler( new StreamHandler(System.out, new SimpleFormatter()));		
 
 		while (true) {
 			try {		
 				startSession();
 			} catch (Exception e) {
-				lg.log(Level.SEVERE,"SocketServer:"+pport, e);					
+				System.out.println("usbModem->:"+e.getMessage());				
 
 			} finally {
 				try {srIn.close();}     catch (Exception e) {}
@@ -56,17 +46,15 @@ public class SocketServerModem extends SerialModem {
 		
 		buildMenu();
 		svrSock = new ServerSocket(port);
-		lg.info("Socket Server Modem Restarted on port: "+port);
+		System.out.println("usbModem->Socket Server Modem Restarted on port: "+port);
 		cntSock = svrSock.accept();
 		srOut  = cntSock.getOutputStream();		
-		srIn   = new TimerInputStream(cntSock.getInputStream());
+		srIn   = cntSock.getInputStream();
 		yModem = new YModem(srIn, srOut);
 		xModem = new XModem(srIn, srOut);
 			
 		srOut.write(CLEAR);
 		srOut.write(header);
-
-		lg.info("Socket Server Modem - connecton");
 
 		while (true) {
 			if(disconnected) {								
@@ -75,17 +63,17 @@ public class SocketServerModem extends SerialModem {
 					srOut.write((CONFAIL).getBytes());
 
 			} 
-			Thread.sleep(1000);  
+			Thread.sleep(250);  
 		}
 	}
 	
 	protected int userPassword() throws IOException {
-		cntSock.getOutputStream().write(bbs.password.getBytes());
+		cntSock.getOutputStream().write(bbsHost.password.getBytes());
 		cntSock.getOutputStream().flush();
 		return -1;
 	}
 	protected int userUserID() throws IOException {
-		cntSock.getOutputStream().write(bbs.user.getBytes());
+		cntSock.getOutputStream().write(bbsHost.user.getBytes());
 		cntSock.getOutputStream().flush();
 		return -1;
 	}
