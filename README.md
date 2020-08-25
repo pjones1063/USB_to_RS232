@@ -44,38 +44,31 @@
  ###  Command Line Options and Usage
  
 
- $ ./usmModem.jar
+ * $ ./usmModem.jar
 
-=======================
-Atari Serial Comm Usage
-=======================
 
-usage: usbModem.jar
-Parms
- -b,--baud <baud>             Serial Baud Rate
- -H,--remotehost <remhost>    TCP remote server mode - host
- -i,--inboundfolder <in>      Inbound transfer folder path
- -l,--localport <localport>   TCP server local mode - port number
- -m,--menufile <menu>         Menu-banner file path
- -o,--outboundfolder <out>    Outbound transfer folder path
- -P,--remoteport <remport>    TCP remote server mode - port number
- -s,--serialport <serial>     Serial Port Name
- -x,--xmlfile <xml>           XML BBS directory file path
+ *  -b,--baud <baud>             Serial Baud Rate
+ *  -H,--remotehost <remhost>    TCP remote server mode - host
+ *  -i,--inboundfolder <in>      Inbound transfer folder path
+ *  -l,--localport <localport>   TCP server local mode - port number
+ *  -m,--menufile <menu>         Menu-banner file path
+ *  -o,--outboundfolder <out>    Outbound transfer folder path
+ *  -P,--remoteport <remport>    TCP remote server mode - port number
+ *  -s,--serialport <serial>     Serial Port Name
+ *  -x,--xmlfile <xml>           XML BBS directory file path
 
 
 
  #### Examples
 
- - Start with serial usb device ttyUSB0 at 19200
-                $ usbModem.jar -s=/dev/ttyUSB0 -b=19200
+ *  Start with serial usb device ttyUSB0 at 19200
+ -               $ usbModem.jar -s=/dev/ttyUSB0 -b=19200
 
- - Start with remote tcp (Altirra modem emulation)
-                $ usbModem.jar -H=192.168.0.100 -P=8080
+ * Start with remote tcp (Altirra modem emulation)
+ -               $ usbModem.jar -H=192.168.0.100 -P=8080
 
- - Start local tcp server
-                $ usbModem.jar -l=9090
-
-
+ *  Start local tcp server
+ -               $ usbModem.jar -l=9090
 
 
 ------------------------------------------------------------
