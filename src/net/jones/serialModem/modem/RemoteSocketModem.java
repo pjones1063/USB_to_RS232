@@ -3,21 +3,26 @@ package net.jones.serialModem.modem;
  
 import java.io.IOException;
 import java.net.Socket;
+
+import net.jones.serialModem.BatchStartUp;
 import net.jones.serialModem.zmodem.XModem;
 import net.jones.serialModem.zmodem.YModem;
 
 
-public class SocketModem extends SerialModem {
+public class RemoteSocketModem extends SerialModem {
 
 	public static void main(String[] args)  { 		
-		(new SocketModem()).go(9090); 
+		(new RemoteSocketModem()).go("localhost", 9090); 
 	} 
 	private  Socket connectionSocket = null;
 	
 	private  int port = -1;
+	private  String host = "";
 	
-	public void go(int pport) {	
+	
+	public void go(String phost, int pport) {	
 		port = pport;
+		host = phost;
 		
 		while (true) {
 			try {
@@ -38,9 +43,15 @@ public class SocketModem extends SerialModem {
 	void startSession() throws Exception {
 		
 		buildMenu();
-		connectionSocket =  new Socket("localhost", port);	
-		System.out.println("usbModem->Socket Modem Restarted on: localhost:" + port);
+		connectionSocket =  new Socket(host, port);	
+		
+		System.out.println("usbModem->Remote Socket Modem Restarted on: "+host+":" + port);
+		System.out.println("    -m,--menufile       :  "+ BatchStartUp.splush);
+		System.out.println("    -x,--xmlfile        :  "+ BatchStartUp.dialxml);
+		System.out.println("    -o,--outboundfolder :  "+ BatchStartUp.outbound);
+		System.out.println("    -i,--inboundfolder  :  "+ BatchStartUp.inbound);
 
+		
 		srOut  = connectionSocket.getOutputStream();
 		srIn   = connectionSocket.getInputStream();
 		yModem = new YModem(srIn, srOut);

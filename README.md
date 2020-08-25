@@ -31,37 +31,85 @@
     program - like TAZ or Bobterm
     -ensure the baud rate is as above and bits/stop bit is 8/1
  
-    File 'banner.asc' and 'dialdirectory.xml' can be placed in folder
-    '/home/pi/' - this can be changed in src file -
-    src/net/jones/serialModem/modem/SerialModem.java
-    to whatever path you like.  Recompile and package jar.
-    
-    Folders /home/pi/Transfer/inbound & outbound can also be changed
-    in src file -
-    src/net/jones/serialModem/modem/SerialModem.java
-    as the YMODEM - send and recv folder.  Recompile and package jar
 
 
 *  Good Luck!
 
+
+
+
+
 ------------------------------------------------------------
 
- ### Commands
-  
+ ###  Command Line Options and Usage
+ 
 
-   *    ? -->  help
-   *    atz -->  Clear & Display Menu
-   *    atd (hostname) (port) --> TCP connect to host    
-   *    bbs (hostname) (port) --> TCP connect to host   
-   *    cls -->  Clear & Display Menu       
-   *    lsi --> list inbound folder
-   *    lso --> list outbound folder
-   *    ssh (user@hostname) -->  ssh to host 
-   *    ysend --> YMODEM batch download
-   *    yrecv --> YMODEM batch upload 
-   *    xsend (filename) --> XMODEM download
-   *    xrecv (filename) --> XMODEM upload 
-   *    timer --> set on/off inactive timer
+ $ ./usmModem.jar
+
+=======================
+Atari Serial Comm Usage
+=======================
+
+usage: usbModem.jar
+Parms
+ -b,--baud <baud>             Serial Baud Rate
+ -H,--remotehost <remhost>    TCP remote server mode - host
+ -i,--inboundfolder <in>      Inbound transfer folder path
+ -l,--localport <localport>   TCP server local mode - port number
+ -m,--menufile <menu>         Menu-banner file path
+ -o,--outboundfolder <out>    Outbound transfer folder path
+ -P,--remoteport <remport>    TCP remote server mode - port number
+ -s,--serialport <serial>     Serial Port Name
+ -x,--xmlfile <xml>           XML BBS directory file path
+
+
+
+ #### Examples
+
+ - Start with serial usb device ttyUSB0 at 19200
+                $ usbModem.jar -s=/dev/ttyUSB0 -b=19200
+
+ - Start with remote tcp (Altirra modem emulation)
+                $ usbModem.jar -H=192.168.0.100 -P=8080
+
+ - Start local tcp server
+                $ usbModem.jar -l=9090
+
+
+
+
+------------------------------------------------------------
+
+
+ ### usbModem Commands
+ 
+
+ *  ? -->  help
+ *  000 (bbs #) --> Connect BBS by listing number
+ *  src (pattern) --> Search BBS listing
+ *  save 000 (bbs #) (user ID) (password) --> save user
+ *  atz -->  Clear & Display Menu
+ *  atd (hostname) (port) --> TCP connect to host
+ *  bbs (hostname) (port) --> TCP connect to host
+ *  cls -->  Clear & Display Menu
+ *  lsi --> list inbound folder
+ *  lso --> list outbound folder
+ *  ssh (user@hostname) -->  ssh to host
+ *  ysend --> YMODEM batch dowload
+ *  yrecv --> YMODEM batch upload
+ *  xsend (filename) --> XMODEM dowload
+ *  xrecv (filename) --> XMODEM upload
+
+
+-------------------------------------------------------------
+
+ ### Esc Key Macro Shortcuts
+ 
+
+ *  [esc] -    --> Exit to prompt
+ *  [esc] u    --> User macro
+ *  [esc] p    --> Password Marco
+
 
 -------------------------------------------------------------
 

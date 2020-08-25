@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import net.jones.serialModem.BatchStartUp;
 import net.jones.serialModem.zmodem.XModem;
 import net.jones.serialModem.zmodem.YModem;
 
@@ -47,6 +48,11 @@ public class SocketServerModem extends SerialModem {
 		buildMenu();
 		svrSock = new ServerSocket(port);
 		System.out.println("usbModem->Socket Server Modem Restarted on port: "+port);
+		System.out.println("    -m,--menufile       :  "+ BatchStartUp.splush);
+		System.out.println("    -x,--xmlfile        :  "+ BatchStartUp.dialxml);
+		System.out.println("    -o,--outboundfolder :  "+ BatchStartUp.outbound);
+		System.out.println("    -i,--inboundfolder  :  "+ BatchStartUp.inbound);
+
 		cntSock = svrSock.accept();
 		srOut  = cntSock.getOutputStream();		
 		srIn   = cntSock.getInputStream();

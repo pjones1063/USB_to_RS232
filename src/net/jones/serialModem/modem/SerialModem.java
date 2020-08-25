@@ -28,6 +28,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import net.jones.serialModem.BatchStartUp;
 import net.jones.serialModem.zmodem.XModem;
 import net.jones.serialModem.zmodem.YModem;
 
@@ -51,14 +52,10 @@ public class SerialModem {
 	protected final static char   ST	   = '*';		
 	protected final static String CRLF     = "\r\n";
 	protected final static String SPCE     = "     ";
-    
 	protected final static String QT       = "`";
-	
-	protected final static String splush   = "file:///home/pi/banner.asc";
-	protected final static String dialxml  =  "/home/pi/dialdirectory.xml";
-	protected final static String inbound  = "/home/pi/Transfer/inbound";
-	protected final static String outbound = "/home/pi/Transfer/outbound";
 	protected final static String _part    = "/part";
+	protected final static String _fl      = "file://";
+
 	
 	protected final static byte [] CLEAR   = new byte[] {27,91,50,74};
 	protected final static int TO          = 30000;
@@ -261,11 +258,11 @@ public class SerialModem {
 		try {
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder builder = factory.newDocumentBuilder();
-			Document document = builder.parse(new File(dialxml));
-			NodeList nodeList = document.getDocumentElement().getElementsByTagName("BBSTelnetHost");
+			Document document = builder.parse(new File(BatchStartUp.dialxml));
+			NodeList nodeList = document.getDocumentElement().getElementsByTagName("BBS");
 			for (int i = 0; i < nodeList.getLength(); i++) {
 				Node node = nodeList.item(i);
-				if(node.getNodeName().equals("BBSTelnetHost")) {
+				if(node.getNodeName().equals("BBS")) {
 					NamedNodeMap m =  node.getAttributes();
 
 					BBSTelnetHost bbs = new BBSTelnetHost(m.getNamedItem("name").getNodeValue(),
@@ -295,7 +292,7 @@ public class SerialModem {
 		try {
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder builder = factory.newDocumentBuilder();
-			Document document = builder.parse(new File(dialxml));
+			Document document = builder.parse(new File(BatchStartUp.dialxml));
 			NodeList nodeList = document.getDocumentElement().getElementsByTagName("BBSTelnetHost");
 			for (int i = 0; i < nodeList.getLength(); i++) {
 				Node node = nodeList.item(i);
@@ -308,7 +305,7 @@ public class SerialModem {
 						TransformerFactory transformerFactory =  TransformerFactory.newInstance();
 						Transformer transformer = transformerFactory.newTransformer();
 						DOMSource dom = new DOMSource(document);
-						StreamResult streamResult = new StreamResult(new File(dialxml) );
+						StreamResult streamResult = new StreamResult(new File(BatchStartUp.dialxml) );
 						transformer.transform(dom, streamResult);
 						
 						Thread.sleep(500);
@@ -337,7 +334,7 @@ public class SerialModem {
 		bbsHostTable.clear();
 		opts = 0;
 		try {
-			String splash = new String(Files.readAllBytes(Paths.get(new URI(splush))));
+			String splash = new String(Files.readAllBytes( Paths.get(new URI(_fl+BatchStartUp.splush))));
 			String[] part = splash.split(_part);
 			header = part[0].replaceAll("\n", CRLF).getBytes();
 			help   = part[1].replaceAll("\n", CRLF).getBytes();
@@ -499,7 +496,7 @@ public class SerialModem {
 			srOut.write((CRLF+CRLF+" ** XMODEM receiving file "+file+CRLF).getBytes());					
 			srOut.flush();
 			
-			path = Paths.get(new URI("file://"+inbound+"/"+file));
+			path = Paths.get(new URI(_fl + BatchStartUp.inbound + "/"+file));
 			Thread.sleep(5000);
 			xModem.receive(path,false);			
 			disconnected = true;
@@ -526,7 +523,7 @@ public class SerialModem {
 			srOut.write((CRLF+CRLF+" ** XMODEM sending file :"+file+CRLF).getBytes());
 			srOut.flush();
 			
-			path = Paths.get(new URI("file://"+outbound+"/"+file));
+			path = Paths.get(new URI(_fl + BatchStartUp.outbound + "/"+file));
 			Thread.sleep(5000);
 			xModem.send(path, false);			
 			disconnected = true;
@@ -549,9 +546,9 @@ public class SerialModem {
 			
 			System.out.println("usbModem->doConnectYREC():");
 			
-			srOut.write((CRLF+CRLF+" ** YMODEM batch receive to :"+inbound+CRLF).getBytes());
+			srOut.write((CRLF+CRLF+" ** YMODEM batch receive to :"+BatchStartUp.inbound+CRLF).getBytes());
 			srOut.flush();
-			path = Paths.get(new URI("file://"+inbound));
+			path = Paths.get(new URI(_fl+BatchStartUp.inbound));
 			Thread.sleep(5000);
 			yModem.receiveFilesInDirectory(path);
 			disconnected = true;
@@ -572,10 +569,10 @@ public class SerialModem {
 		try {
 			
 			System.out.println("usbModem->doConnectYSND():");
-			srOut.write((CRLF+CRLF+" ** YMODEM batch send from :"+outbound+CRLF).getBytes());
+			srOut.write((CRLF+CRLF+" ** YMODEM batch send from :"+BatchStartUp.outbound+CRLF).getBytes());
 			srOut.flush();
 			
-			File [] files = new File(outbound).listFiles();
+			File [] files = new File(BatchStartUp.outbound).listFiles();
 			Thread.sleep(1000);
 			yModem.batchSend(files);			
 			disconnected = true;
@@ -791,10 +788,10 @@ public class SerialModem {
 			return doTimOutFlag();	
 
 		} else if("lsi".equals(opt)) {
-			return doListServerFiles(inbound);
+			return doListServerFiles(BatchStartUp.inbound);
 
 		} else if("lso".equals(opt)) {
-			return doListServerFiles(outbound);
+			return doListServerFiles(BatchStartUp.outbound);
 
 		} else if("ysend".equals(opt)) {
 			return doConnectYSND();
@@ -841,7 +838,11 @@ public class SerialModem {
 		srOut.write(header);
 
 		System.out.println("usbModem->Serial Modem Restarted: "+portName+ " @ "+bRate);
-		
+		System.out.println("    -m,--menufile       :  "+ BatchStartUp.splush);
+		System.out.println("    -x,--xmlfile        :  "+ BatchStartUp.dialxml);
+		System.out.println("    -o,--outboundfolder :  "+ BatchStartUp.outbound);
+		System.out.println("    -i,--inboundfolder  :  "+ BatchStartUp.inbound);
+		 
 		while (true) {
 			if(disconnected) {								
 				srOut.write((PROMPT).getBytes());
