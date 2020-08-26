@@ -60,7 +60,7 @@
  ###  Configurtaion files
  
   * dialdirectory.xml  - BBS Directory  
-    - used with -x options
+    - used with -x option
     
   * banner.asc - Header and help file
     - used with -m option
