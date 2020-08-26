@@ -1,5 +1,5 @@
- Lunix/Raspberry Pi Set-Up
- -------------------------
+Set-Up
+------
 
 
 -Best run on a Raspberry Pi. When you order the USB/RS232 cable - buy a Pi as well!
@@ -9,13 +9,13 @@
 -If using an 850 interface - build db9 null modem adapter. 
      See nullmodem-atari850-db9-db9.png for pin layout.
 
--Install java JVM on linux and/or Pi host
+-Install java JVM -> https://www.oracle.com/java/technologies/javase-downloads.html
 
 -Install the librxtx-java API -> from http://rxtx.qbang.org/wiki/index.php/Main_Page
 
 -Install the JSch API -> from http://www.jcraft.com/jsch/
 
--run on Pi/Linux as -> $ ./usbModem.jar "-s=/dev/ttyUSB0" "-b=19200" where:
+-run as -> $ ./usbModem.jar "-s=/dev/ttyUSB0" "-b=19200" where:
 
    -s = serial port of the adapter
    -b = serial port baud rate
@@ -23,6 +23,7 @@
 -Connect up the cable to an Atari and run some terminal program - like TAZ or Bobterm -ensure the baud rate is as above and bits/stop bit is 8/1
 
 -Good Luck!
+
 
 
 ------------------------------------------------------------
@@ -61,6 +62,17 @@ Parms
  - Start local tcp server
                 $ usbModem.jar -l=9090
 
+				
+------------------------------------------------------------				
+
+ Configurtaion Files:
+ 
+  * dialdirectory.xml  - BBS directory  
+    - used with -x option
+    
+  * banner.asc - Header and help file
+    - used with -m option
+				
 
 ------------------------------------------------------------
 
@@ -92,4 +104,5 @@ Parms
    [esc] p    --> Password Marco
 
 -------------------------------------------------------------
+
 
