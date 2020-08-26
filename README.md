@@ -12,7 +12,7 @@
  
  * If using an 850 interface - build db9 null modem adapter. See nullmodem-atari850-db9-db9.png for pin layout.
   
- * Install java JVM   
+ * Install java JVM -> https://www.oracle.com/java/technologies/javase-downloads.html
        On Raspberry Pi/Debian run -    $ sudo apt-get install oracle-java8-jdk  
        Windows and other OS's - see documentation 
  
