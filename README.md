@@ -57,7 +57,7 @@
 
 ------------------------------------------------------------
 
- ###  Configurtaion files
+ ###  Configurtaion Files
  
   * dialdirectory.xml  - BBS directory  
     - used with -x option
