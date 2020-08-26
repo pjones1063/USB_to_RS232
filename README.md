@@ -13,14 +13,17 @@
  * If using an 850 interface - build db9 null modem adapter. See nullmodem-atari850-db9-db9.png for pin layout.
   
  * Install java JVM -> https://www.oracle.com/java/technologies/javase-downloads.html
+ 
        - On Raspberry Pi/Debian run -    $ sudo apt-get install oracle-java8-jdk  
        - Windows and other OS's - see documentation 
  
  * Install the librxtx-java API ->  http://rxtx.qbang.org/wiki/index.php/Main_Page  
+ 
        - On Raspberry Pi/Debian run -    $ sudo apt install librxtx-java  
        - Windows and other OS's - see documentation
        
- * Install the JSch API ->   http://www.jcraft.com/jsch/  
+ * Install the JSch API ->   http://www.jcraft.com/jsch/ 
+ 
        - On Raspberry Pi/Debian run -   $ sudo apt install libjsch-java  
        - Windows and other OS's - see documentation
  
@@ -74,13 +77,13 @@
  ### Examples
 
  *  Start with serial usb device ttyUSB0 at 19200
-     -    $ usbModem.jar -s=/dev/ttyUSB0 -b=19200
+     - $ usbModem.jar -s=/dev/ttyUSB0 -b=19200
 
  * Start with remote tcp (Altirra modem emulation)
-     -    $ usbModem.jar -H=192.168.0.100 -P=8080
+     - $ usbModem.jar -H=192.168.0.100 -P=8080
 
  *  Start local tcp server
-     -   $ usbModem.jar -l=9090
+     - $ usbModem.jar -l=9090
 
 
 ------------------------------------------------------------
