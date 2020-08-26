@@ -63,13 +63,13 @@
  #### Examples
 
  *  Start with serial usb device ttyUSB0 at 19200
-     -                $ usbModem.jar -s=/dev/ttyUSB0 -b=19200
+     -    $ usbModem.jar -s=/dev/ttyUSB0 -b=19200
 
  * Start with remote tcp (Altirra modem emulation)
-     -                $ usbModem.jar -H=192.168.0.100 -P=8080
+     -    $ usbModem.jar -H=192.168.0.100 -P=8080
 
  *  Start local tcp server
-     -                $ usbModem.jar -l=9090
+     -   $ usbModem.jar -l=9090
 
 
 ------------------------------------------------------------
