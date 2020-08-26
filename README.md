@@ -59,7 +59,7 @@
 
  ###  Configurtaion files
  
-  * dialdirectory.xml  - BBS Directory  
+  * dialdirectory.xml  - BBS directory  
     - used with -x option
     
   * banner.asc - Header and help file
@@ -110,7 +110,7 @@
 
  *  [esc] -    -  Exit to prompt
  *  [esc] u    -  User macro
- *  [esc] p    - Password Marco
+ *  [esc] p    -  Password Marco
 
 
 -------------------------------------------------------------
