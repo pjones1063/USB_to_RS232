@@ -42,9 +42,6 @@
 ------------------------------------------------------------
 
  ###  Command Line Options and Usage
- 
-
- * $ ./usmModem.jar
 
 
  *  -b,--baud <baud>           Serial Baud Rate
@@ -56,11 +53,22 @@
  *  -P,--remoteport <remport>  TCP remote server mode port
  *  -s,--serialport <serial>   Serial Port Name
  *  -x,--xmlfile <xml>         XML BBS directory file path
+ 
+
+------------------------------------------------------------
+
+ ###  Configurtaion files
+ 
+  * dialdirectory.xml  - BBS Directory  
+    - used with -x options
+    
+  * banner.asc - Header and help file
+    - used with -m option
 
 
 ------------------------------------------------------------
 
- #### Examples
+ ### Examples
 
  *  Start with serial usb device ttyUSB0 at 19200
      -    $ usbModem.jar -s=/dev/ttyUSB0 -b=19200
