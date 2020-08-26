@@ -13,13 +13,16 @@
  * If using an 850 interface - build db9 null modem adapter. See nullmodem-atari850-db9-db9.png for pin layout.
   
  * Install java JVM   
-       On Raspberry Pi/Debian run  $ sudo apt-get install oracle-java8-jdk  
+       On Raspberry Pi/Debian run -    $ sudo apt-get install oracle-java8-jdk  
+       Other OS's - see documentation 
  
  * Install the librxtx-java API ->  http://rxtx.qbang.org/wiki/index.php/Main_Page  
-       On Raspberry Pi/Debian run  $ sudo apt install librxtx-java  
- 
+       On Raspberry Pi/Debian run -    $ sudo apt install librxtx-java  
+       Other OS's - see documentation 
+       
  * Install the JSch API ->   http://www.jcraft.com/jsch/  
-       On Raspberry Pi/Debian run  $ sudo apt install libjsch-java  
+       On Raspberry Pi/Debian run -   $ sudo apt install libjsch-java  
+       Other OS's - see documentation 
  
  * Run the app:    $ ./usbModem.jar "-s=/dev/ttyUSB0" "-b=19200"
     where:  
