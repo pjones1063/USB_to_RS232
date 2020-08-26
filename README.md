@@ -47,28 +47,29 @@
  * $ ./usmModem.jar
 
 
- *  -b,--baud <baud>             Serial Baud Rate
- *  -H,--remotehost <remhost>    TCP remote server mode host
- *  -i,--inboundfolder <in>      Inbound transfer folder path
- *  -l,--localport <localport>   TCP server local mode port 
- *  -m,--menufile <menu>         Menu banner file path
- *  -o,--outboundfolder <out>    Outbound transfer folder path
- *  -P,--remoteport <remport>    TCP remote server mode port
- *  -s,--serialport <serial>     Serial Port Name
- *  -x,--xmlfile <xml>           XML BBS directory file path
+ *  -b,--baud <baud>           Serial Baud Rate
+ *  -H,--remotehost <remhost>  TCP remote server mode host
+ *  -i,--inboundfolder <in>    Inbound transfer folder path
+ *  -l,--localport <localport> TCP server local mode port 
+ *  -m,--menufile <menu>       Menu banner file path
+ *  -o,--outboundfolder <out>  Outbound transfer folder path
+ *  -P,--remoteport <remport>  TCP remote server mode port
+ *  -s,--serialport <serial>   Serial Port Name
+ *  -x,--xmlfile <xml>         XML BBS directory file path
 
 
+------------------------------------------------------------
 
  #### Examples
 
  *  Start with serial usb device ttyUSB0 at 19200
- -                   $ usbModem.jar -s=/dev/ttyUSB0 -b=19200
+                     $ usbModem.jar -s=/dev/ttyUSB0 -b=19200
 
  * Start with remote tcp (Altirra modem emulation)
- -                   $ usbModem.jar -H=192.168.0.100 -P=8080
+                     $ usbModem.jar -H=192.168.0.100 -P=8080
 
  *  Start local tcp server
- -                   $ usbModem.jar -l=9090
+                     $ usbModem.jar -l=9090
 
 
 ------------------------------------------------------------
@@ -77,21 +78,21 @@
  ### usbModem Commands
  
 
- *  ? -->  help
- *  000 (bbs #) --> Connect BBS by listing number
- *  src (pattern) --> Search BBS listing
- *  save 000 (bbs #) (user ID) (password) --> save user
- *  atz -->  Clear & Display Menu
- *  atd (hostname) (port) --> TCP connect to host
- *  bbs (hostname) (port) --> TCP connect to host
- *  cls -->  Clear & Display Menu
- *  lsi --> list inbound folder
- *  lso --> list outbound folder
- *  ssh (user@hostname) -->  ssh to host
- *  ysend --> YMODEM batch dowload
- *  yrecv --> YMODEM batch upload
- *  xsend (filename) --> XMODEM dowload
- *  xrecv (filename) --> XMODEM upload
+ *  ? -   help
+ *  000 (bbs #) -  Connect BBS by listing number
+ *  src (pattern) - Search BBS listing
+ *  save 000 (bbs #) (user ID) (password) - Save user
+ *  atz -  Clear & Display Menu
+ *  atd (hostname) (port) - TCP connect to host
+ *  bbs (hostname) (port) - TCP connect to host
+ *  cls -  Clear & Display Menu
+ *  lsi - list inbound folder
+ *  lso - list outbound folder
+ *  ssh (user@hostname) -  ssh to host
+ *  ysend - YMODEM batch dowload
+ *  yrecv - YMODEM batch upload
+ *  xsend (filename) - XMODEM dowload
+ *  xrecv (filename) - XMODEM upload
 
 
 -------------------------------------------------------------
@@ -99,9 +100,9 @@
  ### Esc Key Macro Shortcuts
  
 
- *  [esc] -    --> Exit to prompt
- *  [esc] u    --> User macro
- *  [esc] p    --> Password Marco
+ *  [esc] -    -  Exit to prompt
+ *  [esc] u    -  User macro
+ *  [esc] p    - Password Marco
 
 
 -------------------------------------------------------------
