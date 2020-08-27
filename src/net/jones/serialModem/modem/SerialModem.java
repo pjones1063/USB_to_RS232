@@ -65,7 +65,7 @@ public class SerialModem {
 	protected final static String CONEXIT  = CRLF+"Exiting connection"+CRLF;	
 	protected final static String CONECT   = CRLF+CRLF+"Connecting....."+CRLF;
 	protected final static String HUH      = CRLF+CRLF+" ** Huh?!"+CRLF;
-	protected final static String PROMPT   = CRLF+CRLF+" -> ";
+	protected final static String PROMPT   = CRLF+CRLF+" :> ";
 	protected final static String SLIST    = CRLF+CRLF+"  Num    Name  -  Host" +CRLF+
 			                                           "  ---    ---------------------------------" +CRLF;
 
@@ -771,8 +771,8 @@ public class SerialModem {
 		} else	if("gety2k".equals(opt)){
 			return doServerY2KDate();
 
-		} else if(( (stCount == 3 && "atdt".equals(opt)) 
-				 || (stCount == 3 && "bbsHost".equals(opt)))
+		} else if(( (stCount == 3 && "atd".equals(opt)) 
+				 || (stCount == 3 && "bbs".equals(opt)))
 							&&  StringUtils.isNumeric(cmd.get(2)) ) {
 			
 			return doConnectTelnet(cmd.get(1), Integer.parseInt(cmd.get(2)));
