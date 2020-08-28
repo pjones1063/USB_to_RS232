@@ -10,13 +10,15 @@ import net.jones.serialModem.zmodem.YModem;
 
 public class SocketServerModem extends SerialModem {
 
+	private ServerSocket svrSock = null; 
+	private Socket cntSock = null; 	
+	private int port = -1;
+
+	
 	public static void main(String[] args)  {
 			(new SocketServerModem()).go(9090);
 	}
-	private ServerSocket svrSock = null; 
-	private Socket cntSock = null; 
 	
-	private int port = -1;
 	
 	public void go(int pport) {
 		port = pport;		
@@ -64,7 +66,7 @@ public class SocketServerModem extends SerialModem {
 
 		while (true) {
 			if(disconnected) {								
-				srOut.write((PROMPT).getBytes());
+				srOut.write((prompt));
 				if(! processCommand(getStringFromPort(false).trim())) 
 					srOut.write((CONFAIL).getBytes());
 

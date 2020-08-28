@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
@@ -51,7 +52,9 @@ public class SerialModem {
 	protected final static char   CR       = '\r';
 	protected final static char   ST	   = '*';		
 	protected final static String CRLF     = "\r\n";
-	protected final static String SPCE     = "     ";
+	protected final static String SPC5     = "     ";
+	protected final static String SPC1     = " ";
+	
 	protected final static String QT       = "`";
 	protected final static String _part    = "/part";
 	protected final static String _fl      = "file://";
@@ -65,7 +68,6 @@ public class SerialModem {
 	protected final static String CONEXIT  = CRLF+"Exiting connection"+CRLF;	
 	protected final static String CONECT   = CRLF+CRLF+"Connecting....."+CRLF;
 	protected final static String HUH      = CRLF+CRLF+" ** Huh?!"+CRLF;
-	protected final static String PROMPT   = CRLF+CRLF+" :> ";
 	protected final static String SLIST    = CRLF+CRLF+"  Num    Name  -  Host" +CRLF+
 			                                           "  ---    ---------------------------------" +CRLF;
 
@@ -81,7 +83,7 @@ public class SerialModem {
 	
 	protected long timer;
 	
-	protected byte [] header,help;
+	public byte [] header,help, prompt;
 	
 	protected int opts;
 
@@ -329,22 +331,51 @@ public class SerialModem {
 	}
 
 
+	protected boolean doPromptSet(String newprompt ) {
+		try {
+			
+			Path path = Paths.get(new URI(_fl+BatchStartUp.splush));
+			String splash = new String(Files.readAllBytes(path));
+			
+			String[] part = splash.split(_part);
+			header = part[0].replaceAll("\n", CRLF).getBytes();
+			help   = part[1].replaceAll("\n", CRLF).getBytes();
+			prompt = (CRLF+CRLF+SPC1+ newprompt.trim() + SPC1).getBytes();
+			
+			splash = part[0]   + _part +
+				     part[1]   + _part +
+					 newprompt + _part; 
+			
+			Files.write(path, splash.getBytes());
+			
+			srOut.write((CRLF+SPC1+"Prompt set to: "+newprompt+CRLF).getBytes());
+			
+		} catch (Exception e ){
+			prompt  = (CRLF+CRLF+SPC1+":>"+SPC1).getBytes();
+			return false;	
 
+		}
+		return true;
+	}
+
+	
+	
 	protected void buildMenu() {
 		bbsHostTable.clear();
 		opts = 0;
 		try {
-			String splash = new String(Files.readAllBytes( Paths.get(new URI(_fl+BatchStartUp.splush))));
+			String splash = new String(Files.readAllBytes(Paths.get(new URI(_fl+BatchStartUp.splush))));
 			String[] part = splash.split(_part);
 			header = part[0].replaceAll("\n", CRLF).getBytes();
 			help   = part[1].replaceAll("\n", CRLF).getBytes();
+			prompt = (CRLF+CRLF+SPC1+ part[2].trim() + SPC1).getBytes();
 
 			buildBBSDirectory();			
 		} catch (Exception e ){
 			header = (CRLF+" >> Atari usbModem << "+CRLF).getBytes();	
 			help   = (CRLF+" Help missing !!! "+CRLF).getBytes();	
-		}
-		
+			prompt  = (CRLF+CRLF+SPC1+":>"+SPC1).getBytes();
+		}		
 	}
 
 
@@ -400,10 +431,10 @@ public class SerialModem {
 				} catch (Exception n) {} 
 			}
    
-			srOut.write((CRLF+CRLF+SPCE+"Password: ").getBytes());
+			srOut.write((CRLF+CRLF+SPC5+"Password: ").getBytes());
 			String psswd = getStringFromPort(true);
 
-			srOut.write((CRLF+CRLF+SPCE+"Terminal type (ansi): ").getBytes());
+			srOut.write((CRLF+CRLF+SPC5+"Terminal type (ansi): ").getBytes());
 			String pty = getStringFromPort(false);
 			if(null == pty || pty.equals("")) pty = "ansi";
 
@@ -761,6 +792,9 @@ public class SerialModem {
 
 		} else if("atz".equals(opt) || "cls".equals(opt)) {		
 			return doClear();
+			
+		} else if(stCount == 2 && "prompt".equals(opt)) {
+			return doPromptSet(cmd.get(1));
 
 		} else	if("?".equals(opt) || "help".equals(opt)){		
 			return doHelp();
@@ -845,7 +879,7 @@ public class SerialModem {
 		 
 		while (true) {
 			if(disconnected) {								
-				srOut.write((PROMPT).getBytes());
+				srOut.write(prompt);
 				if(! processCommand(getStringFromPort(false).trim())) 
 					srOut.write((CONFAIL).getBytes());
 

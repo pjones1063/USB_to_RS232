@@ -11,13 +11,14 @@ import net.jones.serialModem.zmodem.YModem;
 
 public class RemoteSocketModem extends SerialModem {
 
+	private  Socket connectionSocket = null;
+	private  int port = -1;
+	private  String host = "";
+	
 	public static void main(String[] args)  { 		
 		(new RemoteSocketModem()).go("localhost", 9090); 
 	} 
-	private  Socket connectionSocket = null;
-	
-	private  int port = -1;
-	private  String host = "";
+
 	
 	
 	public void go(String phost, int pport) {	
@@ -62,7 +63,7 @@ public class RemoteSocketModem extends SerialModem {
 		
 		while (true) {
 			if(disconnected) {								
-				srOut.write((PROMPT).getBytes());
+				srOut.write((prompt));
 				if(! processCommand(getStringFromPort(false).trim())) 
 					srOut.write((CONFAIL).getBytes());
 

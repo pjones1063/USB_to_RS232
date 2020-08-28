@@ -77,13 +77,13 @@
  ### Examples
 
  *  Start with serial usb device ttyUSB0 at 19200
-     - $ usbModem.jar -s=/dev/ttyUSB0 -b=19200
+  *   - $ usbModem.jar -s=/dev/ttyUSB0 -b=19200
 
  * Start with remote tcp (Altirra modem emulation)
-     - $ usbModem.jar -H=192.168.0.100 -P=8080
+  *   - $ usbModem.jar -H=192.168.0.100 -P=8080
 
  *  Start local tcp server
-     - $ usbModem.jar -l=9090
+  *   - $ usbModem.jar -l=9090
 
 
 ------------------------------------------------------------
@@ -92,21 +92,32 @@
  ### usbModem Commands
  
 
- *  ? -   help
- *  000 (bbs #) -  Connect BBS by listing number
- *  src (pattern) - Search BBS listing
- *  save 000 (bbs #) (user ID) (password) - Save user
- *  atz -  Clear & Display Menu
- *  atd (hostname) (port) - TCP connect to host
- *  bbs (hostname) (port) - TCP connect to host
- *  cls -  Clear & Display Menu
- *  lsi - list inbound folder
- *  lso - list outbound folder
- *  ssh (user@hostname) -  ssh to host
- *  ysend - YMODEM batch dowload
- *  yrecv - YMODEM batch upload
- *  xsend (filename) - XMODEM dowload
- *  xrecv (filename) - XMODEM upload
+*   help   --> Display help
+   
+*   nn [bbs_#]   --> Connect BBS by listing number
+*   src [pattern*]   --> Search for BBS listing number
+*   save [bbs_#] user password   --> Save BBS user/password
+   
+*   atz   -->  Clear reset screen
+*   atd hostname/IP port   --> TCP connect to host    
+*   bbs hostname/IP port   --> TCP connect to host   
+*   ssh user@hostname:port  -->  ssh to host   
+   
+*   cls   -->  Clear screen        
+*   prompt value   --> Set command prompt
+*   timer   --> Toggle inactive timer
+   
+*   ysend   --> YMODEM Batch download
+*   yrecv   --> YMODEM Batch upload 
+*   xsend filename   --> XMODEM Download
+*   xrecv filename   --> XMODEM Upload 
+*   lsi   -->  List inbound folder
+*   lso   -->  List outbound folder
+   
+*   [esc] -    --> Exit to prompt
+*   [esc] u    --> User macro
+*   [esc] p    --> Password marco
+
 
 
 -------------------------------------------------------------
