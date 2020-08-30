@@ -11,7 +11,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
@@ -64,7 +63,7 @@ public class SerialModem {
 	protected final static int TO          = 30000;
 	protected final static int SSHPORT     = 22;
 	
-	protected final static String CONFAIL  = CRLF+CRLF+"Connection Failed"+CRLF;
+	protected final static String CONFAIL  = CRLF+CRLF+"Error Failed"+CRLF;
 	protected final static String CONEXIT  = CRLF+"Exiting connection"+CRLF;	
 	protected final static String CONECT   = CRLF+CRLF+"Connecting....."+CRLF;
 	protected final static String HUH      = CRLF+CRLF+" ** Huh?!"+CRLF;
@@ -256,8 +255,9 @@ public class SerialModem {
 	
 
 	protected void buildBBSDirectory () {
-
-		try {
+		bbsHostTable.clear();
+		opts = 0;
+		try {	
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder builder = factory.newDocumentBuilder();
 			Document document = builder.parse(new File(BatchStartUp.dialxml));
@@ -267,13 +267,13 @@ public class SerialModem {
 				if(node.getNodeName().equals("BBS")) {
 					NamedNodeMap m =  node.getAttributes();
 
-					BBSTelnetHost bbs = new BBSTelnetHost(m.getNamedItem("name").getNodeValue(),
+					BBSTelnetHost bbs = new BBSTelnetHost(
+							m.getNamedItem("name").getNodeValue(),
 							m.getNamedItem("ip").getNodeValue(), 
 							m.getNamedItem("port").getNodeValue(),
 							m.getNamedItem("protocol").getNodeValue(),
 							m.getNamedItem("login").getNodeValue(),
-							m.getNamedItem("password").getNodeValue()
-							);
+							m.getNamedItem("password").getNodeValue() );
 
 					bbsHostTable.put(new Integer(bbs.number), bbs);
 				}
@@ -295,10 +295,10 @@ public class SerialModem {
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder builder = factory.newDocumentBuilder();
 			Document document = builder.parse(new File(BatchStartUp.dialxml));
-			NodeList nodeList = document.getDocumentElement().getElementsByTagName("BBSTelnetHost");
+			NodeList nodeList = document.getDocumentElement().getElementsByTagName("BBS");
 			for (int i = 0; i < nodeList.getLength(); i++) {
 				Node node = nodeList.item(i);
-				if(node.getNodeName().equals("BBSTelnetHost")) {
+				if(node.getNodeName().equals("BBS")) {
 					NamedNodeMap m =  node.getAttributes();
 					if(updBBS.name.equals(m.getNamedItem("name").getNodeValue() )) {
 						m.getNamedItem("login").setNodeValue(login);
@@ -310,13 +310,11 @@ public class SerialModem {
 						StreamResult streamResult = new StreamResult(new File(BatchStartUp.dialxml) );
 						transformer.transform(dom, streamResult);
 						
-						Thread.sleep(500);
-						
-						bbsHostTable.clear();						
+						Thread.sleep(250);	
 						buildBBSDirectory();
 						
 						srOut.write((CRLF+" Info saved: "+updBBS.name+CRLF).getBytes());
-						srOut.flush();
+						srOut.flush();						
 						
 						return true;					
 					}
@@ -330,7 +328,29 @@ public class SerialModem {
 		return false; 
 	}
 
+	
 
+	protected boolean doListBBSDirectory (int n) {
+
+		if (!bbsHostTable.containsKey(n)) return false;
+		BBSTelnetHost lstBBS = bbsHostTable.get(n);
+		
+		try {
+			srOut.write((CRLF+CRLF+ "  * "+lstBBS.name).getBytes());
+			srOut.write((CRLF+" Host : "+lstBBS.host +":"+ lstBBS.port).getBytes());
+			srOut.write((CRLF+" User : "+lstBBS.user).getBytes());
+			srOut.write((CRLF+" Pw   : "+lstBBS.password).getBytes());
+			srOut.write((CRLF+" ssh  : "+lstBBS.ssh+CRLF).getBytes());
+			return true;
+
+		} catch (Exception e) {
+			System.out.println("usbModem->:"+e.getMessage());
+			return false;
+		} 
+	}
+
+	
+	
 	protected boolean doPromptSet(String newprompt ) {
 		try {
 			
@@ -361,8 +381,6 @@ public class SerialModem {
 	
 	
 	protected void buildMenu() {
-		bbsHostTable.clear();
-		opts = 0;
 		try {
 			String splash = new String(Files.readAllBytes(Paths.get(new URI(_fl+BatchStartUp.splush))));
 			String[] part = splash.split(_part);
@@ -813,10 +831,13 @@ public class SerialModem {
 
 			
 		} else if(stCount == 2 && "src".equals(opt)) {
-			return doSreachBBSListing(cmd.get(1).toLowerCase());
+			return doSreachBBSListing(cmd.get(1).toLowerCase());			
 
-		} else if(stCount == 4 && StringUtils.isNumeric(cmd.get(1)) && "save".equals(opt)) {
-			return doSaveBBSDirectory(Integer.parseInt(cmd.get(1)), cmd.get(2), cmd.get(3));
+		} else if(stCount == 2 && StringUtils.isNumeric(cmd.get(1)) && "list".equals(opt)) {		
+			return doListBBSDirectory(Integer.parseInt(cmd.get(1)));
+
+		} else if(stCount == 4 && StringUtils.isNumeric(cmd.get(1)) && "save".equals(opt)) {		
+			return doSaveBBSDirectory(Integer.parseInt(cmd.get(1)), cmd.get(2), cmd.get(3));	
 			
 		} else if("timer".equals(opt)){
 			return doTimOutFlag();	
@@ -889,7 +910,6 @@ public class SerialModem {
 	}
 	
 	
-	
 	protected int  userExit() {			
 		disconnected = true;
 		esc = false;
@@ -908,8 +928,6 @@ public class SerialModem {
 		return -1;
 	}
 
-	
-	
 	
 	protected int userUserID() throws IOException {
 		socket.getOutputStream().write((char)0x08);

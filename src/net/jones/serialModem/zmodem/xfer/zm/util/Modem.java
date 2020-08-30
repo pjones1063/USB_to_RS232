@@ -21,10 +21,15 @@ import net.jones.serialModem.zmodem.xfer.util.XCRC;
 public class Modem {
 
     public class InvalidBlockException extends Exception {
+
+	private static final long serialVersionUID = 1L;
     }
     public class RepeatedBlockException extends Exception {
+
+    private static final long serialVersionUID = 1L;
     }
     public class SynchronizationLostException extends Exception {
+    private static final long serialVersionUID = 1L;
     }
     public static final byte SOH = 0x01; /* Start Of Header */
     public static final byte STX = 0x02; /* Start Of Text (used like SOH but means 1024 block size) */
@@ -186,7 +191,7 @@ public class Modem {
 
     public int readNextBlockStart(boolean lastBlockResult) throws IOException {
         int character;
-        int errorCount = 0;
+//        int errorCount = 0;
         while (true) {
             while (true) {
                 character = readByte();
@@ -243,7 +248,7 @@ public class Modem {
      */
     public int requestTransmissionStart(boolean useCRC16) throws IOException {
         int character;
-        int errorCount = 0;
+ //       int errorCount = 0;
         byte requestStartByte;
         if (!useCRC16) {
             requestStartByte = NAK;

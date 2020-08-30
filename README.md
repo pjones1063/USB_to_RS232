@@ -67,6 +67,9 @@
  
   * dialdirectory.xml  - BBS directory  
     - used with -x option
+    - list [bbs_#] --> Display BBS  by listing number
+    -   (remove and non-standard XML after download i.e. "&" chars)
+    
     
   * banner.asc - Header and help file
     - used with -m option
@@ -97,7 +100,8 @@
 *   nn [bbs_#]   --> Connect BBS by listing number
 *   src [pattern*]   --> Search for BBS listing number
 *   save [bbs_#] user password   --> Save BBS user/password
-   
+*   list [bbs_#] --> Display BBS  by listing number
+
 *   atz   -->  Clear reset screen
 *   atd hostname/IP port   --> TCP connect to host    
 *   bbs hostname/IP port   --> TCP connect to host   

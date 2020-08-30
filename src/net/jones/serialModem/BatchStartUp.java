@@ -23,7 +23,6 @@ public class BatchStartUp {
 	private static int pRemPort = -1;
 	private static String  pRemHost = null;
 
-
 	public  static String splush    = null;
 	public  static String  dialxml   = null;
 	public  static String inbound   = null;
@@ -80,9 +79,7 @@ public class BatchStartUp {
 			outbound = commandLine.getOptionValue('o',"/home/pi/Transfer/outbound");
 			pRemHost = commandLine.getOptionValue('H',"localhost");
 			portName = commandLine.getOptionValue('s');
-			
-			
-			
+					
 			String br = commandLine.getOptionValue('b');
 			String sv = commandLine.getOptionValue('P');
 			String pr = commandLine.getOptionValue('l');
