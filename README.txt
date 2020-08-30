@@ -70,7 +70,7 @@ Parms
   * dialdirectory.xml  - BBS directory  
     - used with -x option
     - Current xml at  https://www.telnetbbsguide.com/bbslist/ibbs0820.zip 
-      (remove and non-standard XML after download i.e. "&" chars)
+      (remove all non-standard XML after download - i.e. All "&" chars)
     
     
   * banner.asc - Header and help file

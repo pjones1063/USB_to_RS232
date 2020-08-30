@@ -68,7 +68,7 @@
   * dialdirectory.xml  - BBS directory  
     - used with -x option
     - list [bbs_#] --> Display BBS  by listing number
-    -   (remove and non-standard XML after download i.e. "&" chars)
+    -   (remove all non-standard XML after download - i.e. All "&" chars)
     
     
   * banner.asc - Header and help file
