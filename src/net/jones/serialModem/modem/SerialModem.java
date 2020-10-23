@@ -63,13 +63,11 @@ public class SerialModem {
 	protected final static int TO          = 30000;
 	protected final static int SSHPORT     = 22;
 	
-	protected final static String CONFAIL  = CRLF+CRLF+"Error Failed"+CRLF;
+	protected final static String CONFAIL  = CRLF+CRLF+" * Something didn't work! *"+CRLF;
 	protected final static String CONEXIT  = CRLF+"Exiting connection"+CRLF;	
 	protected final static String CONECT   = CRLF+CRLF+"Connecting....."+CRLF;
-	protected final static String HUH      = CRLF+CRLF+" ** Huh?!"+CRLF;
 	protected final static String SLIST    = CRLF+CRLF+"  Num    Name  -  Host" +CRLF+
 			                                           "  ---    ---------------------------------" +CRLF;
-
 	protected final Hashtable<Integer, BBSTelnetHost> bbsHostTable  = new Hashtable<Integer, BBSTelnetHost>();
 	protected boolean  disconnected = true, timerb = true;
 	protected Socket   socket;
@@ -87,6 +85,9 @@ public class SerialModem {
 	protected int opts;
 
 	protected boolean esc = false;
+	
+	protected ArrayList<String> cmdList;
+	protected int cmdIndex = -1;
 	
 	protected CommPortIdentifier portIdentifier;	
 	
@@ -240,15 +241,16 @@ public class SerialModem {
 		public SSHChannelCloser(Channel chan) { channel = chan; }
 		public void run() {
 			try {
-				while (channel.getExitStatus() == -1 && ! disconnected) {
-					Thread.sleep(1000);
-				}
-				userExit();
+			// while (channel.getExitStatus() == -1 && ! disconnected) {
+				
+			 while (channel.isConnected() &&  ! disconnected) 
+				 Thread.sleep(2000);
+			
 			} catch (Exception e) {
-				System.out.println("usbModem->:"+e.getMessage());
+				System.out.println("usbModem error ->:"+e.getMessage());
 			}
 			System.out.println("usbModem->connection closing");
-			disconnected = true;
+			userExit();
 		}
 	}
 	
@@ -741,25 +743,36 @@ public class SerialModem {
 		}
 		return true;
 	}
-
 	
 	
-	protected  String getStringFromPort(boolean pwd) {	
-		StringBuilder line = new StringBuilder();
-		int c = 0;
+	
+	protected  String getStringFromPort(boolean isPassword) {	
+		StringBuilder line = new StringBuilder();	
+	    int c1 = -1,c2 = -1 ,c3 = -1;
+		cmdIndex = cmdList.size();
+			 
 		try {
-			while ((c = srIn.read()) > -1 && c != 0x0D) {			
-				c = (c == 0x7F) ? 0x08 : c;	 
-				if(pwd)
+			while ((c1 = srIn.read()) != -1 && c1 != 0x0D) {			
+				c1 = (c1 == 0x7F) ? 0x08 : c1;	 
+				
+				if(c1 == 0x08 && line.length() > 0)
+					line.deleteCharAt(line.length()-1);				
+				
+//				else if(c3 == 27 && c2 == 91)
+//					line = new StringBuilder(getHistory(c1));
+				
+				else
+					line.append((char) (c1 & 0xFF));
+				
+				if(isPassword)
 					srOut.write(ST & 0xFF);
-				else
-					srOut.write(c & 0xFF);
-
-				if(c == 0x08 && line.length() > 0)
-					line.deleteCharAt(line.length()-1);
-				else
-					line.append((char) (c & 0xFF));				
+				else 
+					srOut.write(c1 & 0xFF);
+				
+				c3 = c2; c2 = c1;
 			}			
+			
+			
 
 		} catch (IOException e) {
 			System.out.println("usbModem->:"+e.getMessage());
@@ -770,9 +783,21 @@ public class SerialModem {
 	}
 	
 	
+	
+	private String getHistory(int c) {
+		if (cmdIndex == 0) return "";
+	
+		if (c == 65) 
+			System.out.print("Up");
+		if (c == 66) 
+			System.out.print("Down");
+		
+		
+		return "";
+	}
+	
 	public void go(final String portname, final int bRate) {
 		
- 
 		while (true) {
 			try {
 				startSession(portname, bRate);				
@@ -793,82 +818,81 @@ public class SerialModem {
 	protected boolean processCommand(String command) throws Exception  {
 
 		String opt = "";
-		if(command == null || command.equals("")) return true;
 		
 		StringTokenizer st = new StringTokenizer(command.trim());
 		int stCount = st.countTokens();
 		ArrayList<String> cmd = new ArrayList<String>(stCount);
-		while (st.hasMoreElements()) cmd.add(st.nextToken());
 		
+		while (st.hasMoreElements()) cmd.add(st.nextToken());
+
 		if (stCount > 0) opt = cmd.get(0).toLowerCase().trim();
- 		
-		if(stCount == 1 && StringUtils.isNumeric(command)) {
+
+		if(stCount == 1 && StringUtils.isNumeric(command)) 
 			return doConnect(Integer.parseInt(command));
 
-		} else if(stCount == 2 && "ssh".equals(opt)) {
+		else if(stCount == 2 && "ssh".equals(opt)) 
 			return doConnectSSH(cmd.get(1));
 
-		} else if("atz".equals(opt) || "cls".equals(opt)) {		
+		else if("atz".equals(opt) || "cls".equals(opt))  		
 			return doClear();
-			
-		} else if(stCount == 2 && "prompt".equals(opt)) {
+
+		else if(stCount == 2 && "prompt".equals(opt))  
 			return doPromptSet(cmd.get(1));
 
-		} else	if("?".equals(opt) || "help".equals(opt)){		
+		else	if("?".equals(opt) || "help".equals(opt)) 		
 			return doHelp();
 
-		} else	if("getdtm".equals(opt)){		
+		else	if("getdtm".equals(opt)) 		
 			return doServerDate();
 
-		} else	if("gety2k".equals(opt)){
+		else	if("gety2k".equals(opt)) 
 			return doServerY2KDate();
 
-		} else if(( (stCount == 3 && "atd".equals(opt)) 
-				 || (stCount == 3 && "bbs".equals(opt)))
-							&&  StringUtils.isNumeric(cmd.get(2)) ) {
-			
+		else if(( (stCount == 3 && "atd".equals(opt)) 
+				|| (stCount == 3 && "bbs".equals(opt)))
+				&&  StringUtils.isNumeric(cmd.get(2)) )  	
 			return doConnectTelnet(cmd.get(1), Integer.parseInt(cmd.get(2)));
 
-			
-		} else if(stCount == 2 && "src".equals(opt)) {
+		else if(stCount == 2 && "src".equals(opt))  
 			return doSreachBBSListing(cmd.get(1).toLowerCase());			
 
-		} else if(stCount == 2 && StringUtils.isNumeric(cmd.get(1)) && "list".equals(opt)) {		
+		else if(stCount == 2 && StringUtils.isNumeric(cmd.get(1))
+				&& "list".equals(opt))  		
 			return doListBBSDirectory(Integer.parseInt(cmd.get(1)));
 
-		} else if(stCount == 4 && StringUtils.isNumeric(cmd.get(1)) && "save".equals(opt)) {		
+		else if(stCount == 4 && StringUtils.isNumeric(cmd.get(1)) 
+				&& "save".equals(opt))  		
 			return doSaveBBSDirectory(Integer.parseInt(cmd.get(1)), cmd.get(2), cmd.get(3));	
-			
-		} else if("timer".equals(opt)){
+
+		else if("timer".equals(opt)) 
 			return doTimOutFlag();	
 
-		} else if("lsi".equals(opt)) {
+		else if("lsi".equals(opt))  
 			return doListServerFiles(BatchStartUp.inbound);
 
-		} else if("lso".equals(opt)) {
+		else if("lso".equals(opt))  
 			return doListServerFiles(BatchStartUp.outbound);
 
-		} else if("ysend".equals(opt)) {
+		else if("ysend".equals(opt))  
 			return doConnectYSND();
 
-		} else if("yrecv".equals(opt)) {
+		else if("yrecv".equals(opt))  
 			return doConnectYREC();
-	
-		} else if("xsend".equals(opt) & stCount == 2) {
+
+		else if("xsend".equals(opt) & stCount == 2)  
 			return doConnectXSND(cmd.get(1));
 
-		} else if("xrecv".equals(opt) & stCount == 2 ) {
+		else if("xrecv".equals(opt) & stCount == 2 )  
 			return doConnectXREC(cmd.get(1));
-					
-		} else {			
-			srOut.write(HUH.getBytes());
-			return true;
-		}
+		
+		return false;
 
 	}
 
 
 	void startSession(String portName, int bRate) throws Exception {
+		cmdList = new ArrayList<String>();
+		cmdIndex = -1;
 		
    		portIdentifier = CommPortIdentifier.getPortIdentifier(portName);		
 		if (portIdentifier.isCurrentlyOwned()) throw new IOException("Error - Serial port in use!");
@@ -901,12 +925,16 @@ public class SerialModem {
 		while (true) {
 			if(disconnected) {								
 				srOut.write(prompt);
-				if(! processCommand(getStringFromPort(false).trim())) 
-					srOut.write((CONFAIL).getBytes());
-
+				String cmd = getStringFromPort(false).trim();
+				if(cmd != null && !cmd.equals(""))  
+					if(processCommand(cmd))	
+						cmdList.add(cmd);
+					else 
+						srOut.write((CONFAIL).getBytes());
 			} 
-			Thread.sleep(250);  
+			Thread.sleep(100);  
 		}	
+		
 	}
 	
 	

@@ -3,6 +3,7 @@ package net.jones.serialModem.modem;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 
 import net.jones.serialModem.BatchStartUp;
 import net.jones.serialModem.zmodem.XModem;
@@ -43,6 +44,8 @@ public class SocketServerModem extends SerialModem {
 	}
 	
 	void startSession() throws Exception {
+		cmdList = new ArrayList<String>();
+		cmdIndex = -1;
 		
 		try { if(cntSock != null) cntSock.close();}  catch (Exception e) {}		
 		try { if(svrSock != null) svrSock.close();}  catch (Exception e) {}
@@ -66,13 +69,17 @@ public class SocketServerModem extends SerialModem {
 
 		while (true) {
 			if(disconnected) {								
-				srOut.write((prompt));
-				if(! processCommand(getStringFromPort(false).trim())) 
-					srOut.write((CONFAIL).getBytes());
-
+				srOut.write(prompt);
+				String cmd = getStringFromPort(false).trim();
+				if(cmd != null && !cmd.equals(""))  
+					if(processCommand(cmd))	
+						cmdList.add(cmd);
+					else 
+						srOut.write((CONFAIL).getBytes());
 			} 
-			Thread.sleep(250);  
-		}
+			Thread.sleep(100);  
+		}	
+		
 	}
 	
 	protected int userPassword() throws IOException {
