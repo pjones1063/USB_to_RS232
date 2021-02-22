@@ -4,6 +4,7 @@ package net.jones.serialModem.modem;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.logging.Level;
 
 import net.jones.serialModem.BatchStartUp;
 import net.jones.serialModem.zmodem.XModem;
@@ -31,30 +32,25 @@ public class RemoteSocketModem extends SerialModem {
 			try {
 				startSession();
 			} catch (Exception e) {
-				System.out.println("usbModem->:"+e.getMessage());			
-	
+				LG.log(Level.SEVERE, " Exception:", e);			
+
 			} finally {
-					try {srIn.close();}  catch (Exception e) {}
-					try {srOut.close();} catch (Exception e) {}
+				try {srIn.close();}  catch (Exception e) {}
+				try {srOut.close();} catch (Exception e) {}
 			}
 			try {
 				Thread.sleep(10000);
 			} catch (InterruptedException e) {}
 		}
-}
-	
+	}
+
 	void startSession() throws Exception {
 		cmdList = new ArrayList<String>();
 		
 		buildMenu();
 		connectionSocket =  new Socket(host, port);	
 		
-		System.out.println("usbModem->Remote Socket Modem Restarted on: "+host+":" + port);
-		System.out.println("    -m,--menufile       :  "+ BatchStartUp.splush);
-		System.out.println("    -x,--xmlfile        :  "+ BatchStartUp.dialxml);
-		System.out.println("    -o,--outboundfolder :  "+ BatchStartUp.outbound);
-		System.out.println("    -i,--inboundfolder  :  "+ BatchStartUp.inbound);
-
+		LG.info(" ->Remote Socket Modem Restarted on: "+host+":" + port);
 		
 		srOut  = connectionSocket.getOutputStream();
 		srIn   = connectionSocket.getInputStream();

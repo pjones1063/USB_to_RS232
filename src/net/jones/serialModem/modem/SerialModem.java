@@ -29,6 +29,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import net.jones.serialModem.BatchStartUp;
+import net.jones.serialModem.modem.SerialModem.MacroInputStream;
 import net.jones.serialModem.zmodem.XModem;
 import net.jones.serialModem.zmodem.YModem;
 
@@ -42,6 +43,11 @@ import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+
 
 
 public class SerialModem {
@@ -63,20 +69,22 @@ public class SerialModem {
 	protected final static int TO          = 30000;
 	protected final static int SSHPORT     = 22;
 	
-	protected final static String CONFAIL  = CRLF+CRLF+" * Something didn't work! *"+CRLF;
-	protected final static String CONEXIT  = CRLF+"Exiting connection"+CRLF;	
-	protected final static String CONECT   = CRLF+CRLF+"Connecting....."+CRLF;
-	protected final static String SLIST    = CRLF+CRLF+"  Num    Name  -  Host" +CRLF+
+	protected final static String CONFAIL     = CRLF+CRLF+" * Something didn't work! *"+CRLF;
+	protected final static String TIMEOUTEXIT = CRLF+"  Inactive Timeout Reached"+CRLF;
+	protected final static String CONEXIT     = CRLF+"  Connection Exit"+CRLF;	
+	protected final static String CONECT      = CRLF+CRLF+"Connecting....."+CRLF;
+	protected final static String SLIST       = CRLF+CRLF+"  Num    Name  -  Host" +CRLF+
 			                                           "  ---    ---------------------------------" +CRLF;
 	protected final Hashtable<Integer, BBSTelnetHost> bbsHostTable  = new Hashtable<Integer, BBSTelnetHost>();
-	protected boolean  disconnected = true, timerb = true;
+	protected boolean  disconnected = true, checkTimedOut = true;
 	protected Socket   socket;
 	protected InputStream srIn;
 	protected OutputStream srOut;
 	protected Channel  channel;
-	protected YModem  yModem;
-	protected XModem  xModem;
-	protected  BBSTelnetHost bbsHost;
+	protected Session session;
+	protected YModem   yModem;
+	protected XModem   xModem;
+	protected BBSTelnetHost bbsHost;
 	
 	protected long timer;
 	
@@ -90,7 +98,8 @@ public class SerialModem {
 	protected int cmdIndex = -1;
 	
 	protected CommPortIdentifier portIdentifier;	
-	
+
+	protected static final Logger LG = Logger.getLogger(SerialModem.class.getName());
 
  	protected class BBSTelnetHost {
 		public int number, port;
@@ -135,54 +144,97 @@ public class SerialModem {
 			}
 		}
 	}
+ 		
+
+ 	protected  class TelnetThreader implements Runnable {
+ 		MacroInputStream in;
+ 		MacroOutputStream out;
+ 		public TelnetThreader(InputStream i, OutputStream o) {
+ 			in  = new MacroInputStream(i);
+ 			out = new MacroOutputStream(o);
+ 		}
+ 		public void run() {
+ 			try {
+ 				int b=0;
+ 				while (!disconnected  && !socket.isClosed()) 
+ 					if ((b = in.read()) > -1) out.write(b & 0xFF);	
+ 			} catch (IOException e) {
+ 				LG.info("-> telnet connection closing");
+ 			}
+ 			
+ 			disconnected = true;
+ 			try {in.close();} catch (IOException e)  {}
+ 			try {out.close();} catch (IOException e) {}	
+ 		}
+ 	}
+	
  	
-
-	
-	
-	protected  class TelnetThreader implements Runnable {
-		InputStream in;
-		OutputStream out;
-		public TelnetThreader(InputStream i, OutputStream o) {in = i; out = o;}
-		public void run() {
-			try {
-				int b=0;
-				while (!disconnected  && !socket.isClosed()) 
-					if ((b = in.read()) > -1) out.write(b & 0xFF);	
-			} catch (IOException e) {
-				System.out.println("usbModem->connection closing");
-			}
-			disconnected = true;
+	protected class MacroOutputStream extends OutputStream  {
+		protected OutputStream  outputStream;
+		
+		public MacroOutputStream(OutputStream mos) {
+				outputStream = mos;		
 		}
-	}
-	
-	
-	protected class TelnetInputStream extends InputStream  {
-		protected InputStream  inputstream;
-		public TelnetInputStream(InputStream mis) {
-			inputstream = mis;
-			esc = false;
-			timer = new Date().getTime() / 1000;	
-			(new Thread(new Runnable() {
-				@Override
-				public void run() {
-					while (true) {						
-						try {Thread.sleep(90000);} catch (Exception e) {}
-						long now = new Date().getTime() / 1000;
-						if(timerb && !disconnected && (now - timer) > (5 * 60) )
-							try {userExit();} catch (Exception e) {}
-					}	
-
-				}
-			})).start();
-		}
-
 		
 		@Override
-		public int available() throws IOException {return inputstream.available();}
+		public void write(int b) throws IOException {
+		    outputStream.write(b);		    
+		}
+		@Override
+		public void close() throws IOException {
+			LG.info("-> closing output buffer"); // but not really
+			outputStream.flush();
+		}
+		@Override
+		public void write(byte [] b) throws IOException {
+		    outputStream.write(b);		    
+		}
+		@Override
+		public void write(byte [] b, int o, int l) throws IOException {
+		    outputStream.write(b,o,l);		    
+		}
+		@Override
+		public void flush() throws IOException {
+		    outputStream.flush();
+		}		
+		@Override
+		public boolean equals(Object o) { return outputStream.equals(o);}
+		
+	}
+ 	
+	protected class MacroInputStream extends InputStream  {
+		protected InputStream  inputstream;
+		public MacroInputStream(InputStream mis) {
+			inputstream = mis;
+			esc = false;
+			
+			if (checkTimedOut) {
+				timer = new Date().getTime() / 1000;	
+				(new Thread(new Runnable() {
+					@Override
+					public void run() {
+						while (true) {						
+							try {Thread.sleep(90000);} catch (Exception e) {}
+							long now = new Date().getTime() / 1000;
+							if(!disconnected && (now - timer) > (5 * 60) ) {
+								try {srOut.write((TIMEOUTEXIT).getBytes());} catch (IOException e1) {}
+								userExit();
+							}
+						}	
+
+					}})).start();
+			}
+		
+		}
 
 		@Override
-		public void close() throws IOException {userExit();}
-
+		public int available() throws IOException {return inputstream.available();}
+		@Override
+		public void close() throws IOException {
+			LG.info("-> closing input buffer");  // but not really
+			userExit();
+			}
+		
 
 		protected int doMacros(int chr) throws IOException {
 
@@ -195,7 +247,9 @@ public class SerialModem {
 				  return userPassword();
 			}
 			
-			timer = new Date().getTime() / 1000;
+			if (checkTimedOut) 
+				timer = new Date().getTime() / 1000;
+			
 			esc = (chr==27)? true: false;					
 			return chr;
 		}
@@ -203,7 +257,6 @@ public class SerialModem {
 
 		@Override
 		public boolean equals(Object o) { return inputstream.equals(o);}
-
 		@Override
 		public void mark(int readlimit) {inputstream.mark(readlimit);}
 		@Override
@@ -234,28 +287,6 @@ public class SerialModem {
 
 	}	
 	
-
- 	
-	protected class SSHChannelCloser implements Runnable {
-		Channel channel;
-		public SSHChannelCloser(Channel chan) { channel = chan; }
-		public void run() {
-			try {
-			// while (channel.getExitStatus() == -1 && ! disconnected) {
-				
-			 while (channel.isConnected() &&  ! disconnected) 
-				 Thread.sleep(2000);
-			
-			} catch (Exception e) {
-				System.out.println("usbModem error ->:"+e.getMessage());
-			}
-			System.out.println("usbModem->connection closing");
-			userExit();
-		}
-	}
-	
-	
-
 	protected void buildBBSDirectory () {
 		bbsHostTable.clear();
 		opts = 0;
@@ -282,7 +313,7 @@ public class SerialModem {
 			}
 
 		} catch (Exception e) {
-			System.out.println("usbModem->:"+e.getMessage());;
+			LG.log(Level.SEVERE, " Exception:", e);
 		}                  
 	}
 
@@ -324,7 +355,7 @@ public class SerialModem {
 			}
 
 		} catch (Exception e) {
-			System.out.println("usbModem->:"+e.getMessage());
+			LG.log(Level.SEVERE, " Exception:", e);
 			return false;
 		}            
 		return false; 
@@ -346,7 +377,7 @@ public class SerialModem {
 			return true;
 
 		} catch (Exception e) {
-			System.out.println("usbModem->:"+e.getMessage());
+			LG.log(Level.SEVERE, " Exception:", e);
 			return false;
 		} 
 	}
@@ -406,7 +437,7 @@ public class SerialModem {
 			srOut.write(CRLF.getBytes());
 			srOut.flush();
 		} catch (IOException e) {
-			System.out.println("usbModem->:"+e.getMessage());
+			LG.log(Level.SEVERE, " Exception:", e);
 			return false;
 		}
 		return true;
@@ -428,14 +459,19 @@ public class SerialModem {
 	protected boolean doConnectSSH(String command) throws IOException   {
 
 		try {
-			channel.disconnect();
-			Thread.sleep(2000);
-			channel = null;		
+			if(channel != null) channel.disconnect();
+			channel = null;	
 		} catch (Exception n) { }
 
 		
 		try {
-			System.out.println("usbModem->doConnectSSH():" + command);
+			if(session != null) session.disconnect();
+			session = null;	
+		} catch (Exception n) { }
+
+		
+		try {
+			LG.info("-> doConnectSSH():" + command);
 			JSch jsch = new JSch();
 			int sp = command.indexOf('@');
 
@@ -461,8 +497,9 @@ public class SerialModem {
 			if(host.length() < 1 || user.length() < 1 || psswd.length() < 1) return false;
 			srOut.write(CONECT.getBytes());
 
-			Session session = jsch.getSession(user, host, port);
+			session = jsch.getSession(user, host, port);
 			session.setPassword(psswd);
+			 
 			java.util.Properties config = new java.util.Properties(); 
 			config.put("StrictHostKeyChecking", "no");
 			session.setConfig(config);
@@ -478,30 +515,22 @@ public class SerialModem {
 			((ChannelShell) channel).setEnv("LANG", "ja_JP.eucJP");
 
 			disconnected = false;		 
-			channel.setInputStream(srIn,true);
-			channel.setOutputStream(srOut,true);
-			channel.connect(30000);		
-			
-			(new Thread(new SSHChannelCloser(channel) )).start();
-
+			channel.setInputStream( new MacroInputStream(srIn),   false);
+			channel.setOutputStream(new MacroOutputStream(srOut), false);
+			channel.connect(40500);		
 
 		} catch (Exception e) {
-			System.out.println("usbModem->connection closing"+e.getMessage());
+			LG.log(Level.SEVERE, " Exception:", e);
 			srOut.write((CRLF + e.getMessage() + CRLF).getBytes());
 
-			try {
-				if (channel != null && channel.isConnected())
-					channel.disconnect();
-			} catch (Exception n) {
-				System.out.println("usbModem->connection closing"+e.getMessage());
-				srOut.write((CRLF + n.getMessage() + CRLF).getBytes());
-			}
+			try {channel.disconnect();} catch (Exception e1) {}
+			try {session.disconnect();} catch (Exception e1) {}
 			
 			disconnected = true;
 			esc = false;
 			return false;
 		}
-
+		
 		return true;
 	}
 
@@ -513,18 +542,15 @@ public class SerialModem {
 
 		try {
 			
-			System.out.println("usbModem->doConnectTelnet():" + host+":"+port);
+			LG.info("-> doConnectTelnet():" + host+":"+port);
 			disconnected = false; 
 			socket = new Socket(host, port);
 
-			(new Thread(new TelnetThreader(
-					new TelnetInputStream(srIn),
-					socket.getOutputStream()) )).start();
-			(new Thread(new TelnetThreader(
-					socket.getInputStream(), srOut) )).start();
-
+			(new Thread(new TelnetThreader(srIn, socket.getOutputStream()) )).start();
+			(new Thread(new TelnetThreader(socket.getInputStream(), srOut) )).start();
+			
 		} catch (Exception e) {
-			System.out.println("usbModem->:"+e.getMessage());
+			LG.log(Level.SEVERE, " Exception:", e);
 			try {if(socket != null && socket.isConnected()) socket.close();} catch (Exception n) {}
 			srOut.write( (CRLF + e.getMessage() + CRLF).getBytes() );
 			disconnected = true;
@@ -538,11 +564,11 @@ public class SerialModem {
 	
 	protected boolean doConnectXREC(String file) throws IOException   {
 		disconnected = false;
-		timerb = false;
+		checkTimedOut = false;
 		Path path;
 		try {
 			
-			System.out.println("usbModem->doConnectXREC():" + file);
+			LG.info("-> doConnectXREC():" + file);
 			
 			srOut.write((CRLF+CRLF+" ** XMODEM receiving file "+file+CRLF).getBytes());					
 			srOut.flush();
@@ -554,7 +580,7 @@ public class SerialModem {
 			return true;
 		
 		} catch (Exception e) {
-			System.out.println("usbModem->:"+e.getMessage());
+			LG.log(Level.SEVERE, " Exception:", e);
 			srOut.write((CRLF+CRLF+CONFAIL+CRLF).getBytes());
 			disconnected = true;
 			return false;
@@ -564,12 +590,12 @@ public class SerialModem {
 	
 	protected boolean doConnectXSND(String file) throws IOException   {
 		disconnected = false;
-		timerb = false;
+		checkTimedOut = false;
 		Path path;
 		
 		try {
 			
-			System.out.println("usbModem->doConnectXSND():" + file);
+			LG.info("-> doConnectXSND():" + file);
 			
 			srOut.write((CRLF+CRLF+" ** XMODEM sending file :"+file+CRLF).getBytes());
 			srOut.flush();
@@ -581,7 +607,7 @@ public class SerialModem {
 			return true;
 		
 		} catch (Exception e) {
-			System.out.println("usbModem->:"+e.getMessage());
+			LG.log(Level.SEVERE, " Exception:", e);
 			srOut.write((CRLF+CRLF+CONFAIL+CRLF).getBytes());
 			disconnected = true;
 			return false;
@@ -591,11 +617,11 @@ public class SerialModem {
 
 	protected boolean doConnectYREC() throws IOException    {
 		disconnected = false;
-		timerb = false;
+		checkTimedOut = false;
 		Path path;
 		try {			
 			
-			System.out.println("usbModem->doConnectYREC():");
+			LG.info("-> doConnectYREC():");
 			
 			srOut.write((CRLF+CRLF+" ** YMODEM batch receive to :"+BatchStartUp.inbound+CRLF).getBytes());
 			srOut.flush();
@@ -606,7 +632,7 @@ public class SerialModem {
 			return true;
 		
 		} catch (Exception e) {
-			System.out.println("usbModem->:"+e.getMessage());
+			LG.log(Level.SEVERE, " Exception:", e);
 			srOut.write((CRLF+CRLF+CONFAIL+CRLF).getBytes());
 			disconnected = true;
 			return false;
@@ -616,10 +642,10 @@ public class SerialModem {
 
 	protected boolean doConnectYSND() throws IOException   {
 		disconnected = false;
-		timerb = false;
+		checkTimedOut = false;
 		try {
 			
-			System.out.println("usbModem->doConnectYSND():");
+			LG.info("-> doConnectYSND():");
 			srOut.write((CRLF+CRLF+" ** YMODEM batch send from :"+BatchStartUp.outbound+CRLF).getBytes());
 			srOut.flush();
 			
@@ -630,7 +656,7 @@ public class SerialModem {
 			return true;
 		
 		} catch (Exception e) {
-			System.out.println("usbModem->:"+e.getMessage());	
+			LG.log(Level.SEVERE, " Exception:", e);
 			srOut.write((CRLF+CRLF+CONFAIL+CRLF).getBytes());
 			disconnected = true;
 			return false;
@@ -643,11 +669,12 @@ public class SerialModem {
 			srOut.write(help);
 			srOut.flush();
 		} catch (IOException e) {
-			System.out.println("usbModem->:"+e.getMessage());
+			LG.log(Level.SEVERE, " Exception:", e);
 			return false;
 		}
 		return true;
 	}
+	
 	
 	protected boolean doListServerFiles(String path) {
 		File dir = new File(path);
@@ -661,7 +688,7 @@ public class SerialModem {
 			srOut.write((CRLF+CRLF).getBytes());
 			
 		} catch (IOException e) {
-			System.out.println("usbModem->:"+e.getMessage());			
+			LG.log(Level.SEVERE, " Exception:", e);			
 			return false;
 		}
 		return true;
@@ -669,14 +696,15 @@ public class SerialModem {
 
 
 
+	
 	protected boolean doServerDate() {
 		try {
-			System.out.println("usbModem->doServerDate():");
-			srOut.write( (new SimpleDateFormat("yyyy MM dd kk mm").format(new Date())).getBytes());
+			LG.info("-> doServerDate()");
+			srOut.write( (new SimpleDateFormat("yyyy MM dd kk mm ss").format(new Date())).getBytes());
 			srOut.write(CRLF.getBytes());
 			srOut.flush();
 		} catch (IOException e) {
-			System.out.println("usbModem->:"+e.getMessage());
+			LG.log(Level.SEVERE, " Exception:", e);
 			return false;
 		}
 		return true;
@@ -686,14 +714,14 @@ public class SerialModem {
 	
 	protected boolean doServerY2KDate() {
 		try {
-			System.out.println("usbModem->doServerDate():");
+			LG.info("-> doServerDate()");
 			Date d = new Date();
 			int year30 =  Integer.parseInt(new SimpleDateFormat("yyyy").format(d)) - 30;
-			srOut.write(( Integer.toString(year30) + new SimpleDateFormat(" MM dd kk mm").format(d)).getBytes());
+			srOut.write(( Integer.toString(year30) + new SimpleDateFormat(" MM dd kk mm ss").format(d)).getBytes());
 			srOut.write(CRLF.getBytes());
 			srOut.flush();
 		} catch (IOException e) {
-			System.out.println("usbModem->:"+e.getMessage());
+			LG.log(Level.SEVERE, " Exception:", e);
 			return false;
 		}
 		return true;
@@ -702,6 +730,7 @@ public class SerialModem {
 	
 	protected boolean doSreachBBSListing(String src) throws IOException {
 
+		LG.info("-> doSreachBBSListing:"+src);
 		Enumeration<BBSTelnetHost> bbsEnum = bbsHostTable.elements();
 		DecimalFormat f = new DecimalFormat("0000");
 		StringBuffer mn = new StringBuffer("");
@@ -732,13 +761,13 @@ public class SerialModem {
 	
 	protected boolean doTimOutFlag() {
 		try {
-			timerb = ! timerb;
+			checkTimedOut = ! checkTimedOut;
 			srOut.write(CRLF.getBytes());
-			srOut.write(("   Inactive timer:  " + (timerb ?"On":"off") ).getBytes());
+			srOut.write(("   Inactive timer:  " + (checkTimedOut ?"On":"off") ).getBytes());
 			srOut.write(CRLF.getBytes());
 			srOut.flush();
 		} catch (IOException e) {
-			System.out.println("usbModem->:"+e.getMessage());
+			LG.log(Level.SEVERE, " Exception:", e);
 			return false;
 		}
 		return true;
@@ -757,10 +786,7 @@ public class SerialModem {
 				
 				if(c1 == 0x08 && line.length() > 0)
 					line.deleteCharAt(line.length()-1);				
-				
-//				else if(c3 == 27 && c2 == 91)
-//					line = new StringBuilder(getHistory(c1));
-				
+								
 				else
 					line.append((char) (c1 & 0xFF));
 				
@@ -775,7 +801,7 @@ public class SerialModem {
 			
 
 		} catch (IOException e) {
-			System.out.println("usbModem->:"+e.getMessage());
+			LG.log(Level.SEVERE, " Exception:", e);
 			return "";
 		}
 		
@@ -783,26 +809,14 @@ public class SerialModem {
 	}
 	
 	
-	
-	private String getHistory(int c) {
-		if (cmdIndex == 0) return "";
-	
-		if (c == 65) 
-			System.out.print("Up");
-		if (c == 66) 
-			System.out.print("Down");
 		
-		
-		return "";
-	}
-	
 	public void go(final String portname, final int bRate) {
 		
 		while (true) {
 			try {
 				startSession(portname, bRate);				
-			} catch (Exception e) {
-				System.out.println("usbModem->:"+e.getMessage());				
+			} catch (Exception e) {LG.log(Level.SEVERE, " Exception:", e);
+				
 			} finally {
 				try {srIn.close();}  catch (Exception e) {}
 				try {srOut.close();} catch (Exception e) {}
@@ -815,78 +829,82 @@ public class SerialModem {
 	} 
 
 
-	protected boolean processCommand(String command) throws Exception  {
+	protected boolean processCommand(String command)  {
 
-		String opt = "";
-		
-		StringTokenizer st = new StringTokenizer(command.trim());
-		int stCount = st.countTokens();
-		ArrayList<String> cmd = new ArrayList<String>(stCount);
-		
-		while (st.hasMoreElements()) cmd.add(st.nextToken());
+		try {
+			String opt = "";
 
-		if (stCount > 0) opt = cmd.get(0).toLowerCase().trim();
+			StringTokenizer st = new StringTokenizer(command.trim());
+			int stCount = st.countTokens();
+			ArrayList<String> cmd = new ArrayList<String>(stCount);
 
-		if(stCount == 1 && StringUtils.isNumeric(command)) 
-			return doConnect(Integer.parseInt(command));
+			while (st.hasMoreElements()) cmd.add(st.nextToken());
 
-		else if(stCount == 2 && "ssh".equals(opt)) 
-			return doConnectSSH(cmd.get(1));
+			if (stCount > 0) opt = cmd.get(0).toLowerCase().trim();
 
-		else if("atz".equals(opt) || "cls".equals(opt))  		
-			return doClear();
+			if(stCount == 1 && StringUtils.isNumeric(command)) 
+				return doConnect(Integer.parseInt(command));
 
-		else if(stCount == 2 && "prompt".equals(opt))  
-			return doPromptSet(cmd.get(1));
+			else if(stCount == 2 && "ssh".equals(opt)) 
+				return doConnectSSH(cmd.get(1));
 
-		else	if("?".equals(opt) || "help".equals(opt)) 		
-			return doHelp();
+			else if("atz".equals(opt) || "cls".equals(opt))  		
+				return doClear();
 
-		else	if("getdtm".equals(opt)) 		
-			return doServerDate();
+			else if(stCount == 2 && "prompt".equals(opt))  
+				return doPromptSet(cmd.get(1));
 
-		else	if("gety2k".equals(opt)) 
-			return doServerY2KDate();
+			else	if("?".equals(opt) || "help".equals(opt)) 		
+				return doHelp();
 
-		else if(( (stCount == 3 && "atd".equals(opt)) 
-				|| (stCount == 3 && "bbs".equals(opt)))
-				&&  StringUtils.isNumeric(cmd.get(2)) )  	
-			return doConnectTelnet(cmd.get(1), Integer.parseInt(cmd.get(2)));
+			else	if("getdtm".equals(opt)) 		
+				return doServerDate();
 
-		else if(stCount == 2 && "src".equals(opt))  
-			return doSreachBBSListing(cmd.get(1).toLowerCase());			
+			else	if("gety2k".equals(opt)) 
+				return doServerY2KDate();
 
-		else if(stCount == 2 && StringUtils.isNumeric(cmd.get(1))
-				&& "list".equals(opt))  		
-			return doListBBSDirectory(Integer.parseInt(cmd.get(1)));
+			else if(( (stCount == 3 && "atd".equals(opt)) 
+					|| (stCount == 3 && "bbs".equals(opt)))
+					&&  StringUtils.isNumeric(cmd.get(2)) )  	
+				return doConnectTelnet(cmd.get(1), Integer.parseInt(cmd.get(2)));
 
-		else if(stCount == 4 && StringUtils.isNumeric(cmd.get(1)) 
-				&& "save".equals(opt))  		
-			return doSaveBBSDirectory(Integer.parseInt(cmd.get(1)), cmd.get(2), cmd.get(3));	
+			else if(stCount == 2 && "src".equals(opt))  
+				return doSreachBBSListing(cmd.get(1).toLowerCase());			
 
-		else if("timer".equals(opt)) 
-			return doTimOutFlag();	
+			else if(stCount == 2 && StringUtils.isNumeric(cmd.get(1))
+					&& "list".equals(opt))  		
+				return doListBBSDirectory(Integer.parseInt(cmd.get(1)));
 
-		else if("lsi".equals(opt))  
-			return doListServerFiles(BatchStartUp.inbound);
+			else if(stCount == 4 && StringUtils.isNumeric(cmd.get(1)) 
+					&& "save".equals(opt))  		
+				return doSaveBBSDirectory(Integer.parseInt(cmd.get(1)), cmd.get(2), cmd.get(3));	
 
-		else if("lso".equals(opt))  
-			return doListServerFiles(BatchStartUp.outbound);
+			else if("timer".equals(opt)) 
+				return doTimOutFlag();	
 
-		else if("ysend".equals(opt))  
-			return doConnectYSND();
+			else if("lsi".equals(opt))  
+				return doListServerFiles(BatchStartUp.inbound);
 
-		else if("yrecv".equals(opt))  
-			return doConnectYREC();
+			else if("lso".equals(opt))  
+				return doListServerFiles(BatchStartUp.outbound);
 
-		else if("xsend".equals(opt) & stCount == 2)  
-			return doConnectXSND(cmd.get(1));
+			else if("ysend".equals(opt))  
+				return doConnectYSND();
 
-		else if("xrecv".equals(opt) & stCount == 2 )  
-			return doConnectXREC(cmd.get(1));
-		
+			else if("yrecv".equals(opt))  
+				return doConnectYREC();
+
+			else if("xsend".equals(opt) & stCount == 2)  
+				return doConnectXSND(cmd.get(1));
+
+			else if("xrecv".equals(opt) & stCount == 2 )  
+				return doConnectXREC(cmd.get(1));
+
+		} catch (Exception e) {			
+			try { LG.log(Level.SEVERE, " Exception:", e); } catch (Exception e1) {}
+		}
+
 		return false;
-
 	}
 
 
@@ -916,11 +934,7 @@ public class SerialModem {
 		srOut.write(CLEAR);
 		srOut.write(header);
 
-		System.out.println("usbModem->Serial Modem Restarted: "+portName+ " @ "+bRate);
-		System.out.println("    -m,--menufile       :  "+ BatchStartUp.splush);
-		System.out.println("    -x,--xmlfile        :  "+ BatchStartUp.dialxml);
-		System.out.println("    -o,--outboundfolder :  "+ BatchStartUp.outbound);
-		System.out.println("    -i,--inboundfolder  :  "+ BatchStartUp.inbound);
+		LG.info(" -> Serial Modem Restarted: "+portName+ " @ "+bRate);
 		 
 		while (true) {
 			if(disconnected) {								
@@ -932,7 +946,7 @@ public class SerialModem {
 					else 
 						srOut.write((CONFAIL).getBytes());
 			} 
-			Thread.sleep(100);  
+			Thread.sleep(1000);  
 		}	
 		
 	}
@@ -941,14 +955,16 @@ public class SerialModem {
 	protected int  userExit() {			
 		disconnected = true;
 		esc = false;
-		try { srOut.write((CONEXIT).getBytes()); } catch (IOException e1) { }
-		try {Thread.sleep(250); } catch (InterruptedException e) {}
-		try {if(socket  != null && socket.isConnected()) socket.close();} catch (Exception n) {}
-		try {if(channel != null && channel.isConnected()){channel.disconnect();channel.getSession().disconnect();}} catch (Exception n) {}		
+		try { 
+			srOut.write((CONEXIT).getBytes());
+			srOut.flush();
+			}   catch (Exception e) {}	
+		try {if(socket  != null) socket.close();}         catch (Exception e) {}
+		try {if(channel != null) channel.disconnect();}   catch (Exception e) {}
+		try {if(session != null) session.disconnect();}   catch (Exception E) {}
 		return -1;
 	}
 
-	
 	protected int userPassword() throws IOException {
 		socket.getOutputStream().write((char)0x08);
 		socket.getOutputStream().write(bbsHost.password.getBytes());

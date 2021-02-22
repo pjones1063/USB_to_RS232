@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.logging.Level;
 
 import net.jones.serialModem.BatchStartUp;
+import net.jones.serialModem.modem.SerialModem.MacroInputStream;
 import net.jones.serialModem.zmodem.XModem;
 import net.jones.serialModem.zmodem.YModem;
 
@@ -14,7 +16,6 @@ public class SocketServerModem extends SerialModem {
 	private ServerSocket svrSock = null; 
 	private Socket cntSock = null; 	
 	private int port = -1;
-
 	
 	public static void main(String[] args)  {
 			(new SocketServerModem()).go(9090);
@@ -28,7 +29,7 @@ public class SocketServerModem extends SerialModem {
 			try {		
 				startSession();
 			} catch (Exception e) {
-				System.out.println("usbModem->:"+e.getMessage());				
+				LG.log(Level.SEVERE, " Exception:", e);				
 
 			} finally {
 				try {srIn.close();}     catch (Exception e) {}
@@ -52,11 +53,7 @@ public class SocketServerModem extends SerialModem {
 		
 		buildMenu();
 		svrSock = new ServerSocket(port);
-		System.out.println("usbModem->Socket Server Modem Restarted on port: "+port);
-		System.out.println("    -m,--menufile       :  "+ BatchStartUp.splush);
-		System.out.println("    -x,--xmlfile        :  "+ BatchStartUp.dialxml);
-		System.out.println("    -o,--outboundfolder :  "+ BatchStartUp.outbound);
-		System.out.println("    -i,--inboundfolder  :  "+ BatchStartUp.inbound);
+		LG.info(" ->Socket Server Modem Restarted on port: "+port);
 
 		cntSock = svrSock.accept();
 		srOut  = cntSock.getOutputStream();		
