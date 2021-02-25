@@ -21,6 +21,7 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.StringTokenizer;
 
+import javax.print.attribute.HashPrintJobAttributeSet;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Transformer;
@@ -29,7 +30,6 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import net.jones.serialModem.BatchStartUp;
-import net.jones.serialModem.modem.SerialModem.MacroInputStream;
 import net.jones.serialModem.zmodem.XModem;
 import net.jones.serialModem.zmodem.YModem;
 
@@ -48,56 +48,54 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-
-
 public class SerialModem {
 	
+	protected final static char   LF          = '\n';	
+	protected final static char   CR          = '\r';
+	protected final static char   ST	      = '*';	
 	
-	protected final static char   LF       = '\n';	
-	protected final static char   CR       = '\r';
-	protected final static char   ST	   = '*';		
-	protected final static String CRLF     = "\r\n";
-	protected final static String SPC5     = "     ";
-	protected final static String SPC1     = " ";
+	protected final static int    ESC         = 0x1B;
+	protected final static int    DEL         = 0x08;
+	protected final static int    BS          = 0x7F;
+	protected final static int    UP          = 0x41;
+	protected final static int    DOWN        = 0x42;
 	
-	protected final static String QT       = "`";
-	protected final static String _part    = "/part";
-	protected final static String _fl      = "file://";
+	protected final static int    TO          = 30000;
+	protected final static int    SSHPORT     = 22;
+	
 
+	protected final static byte [] CLEAR      = new byte[] {27,91,50,74};
 	
-	protected final static byte [] CLEAR   = new byte[] {27,91,50,74};
-	protected final static int TO          = 30000;
-	protected final static int SSHPORT     = 22;
-	
+	protected final static String CRLF        = "\r\n";
+	protected final static String SPC5        = "     ";
+	protected final static String SPC1        = " ";	
+	protected final static String QT          = "`";
+	protected final static String _part       = "/part";
+	protected final static String _fl         = "file://";
 	protected final static String CONFAIL     = CRLF+CRLF+" * Something didn't work! *"+CRLF;
 	protected final static String TIMEOUTEXIT = CRLF+"  Inactive Timeout Reached"+CRLF;
 	protected final static String CONEXIT     = CRLF+"  Connection Exit"+CRLF;	
 	protected final static String CONECT      = CRLF+CRLF+"Connecting....."+CRLF;
 	protected final static String SLIST       = CRLF+CRLF+"  Num    Name  -  Host" +CRLF+
-			                                           "  ---    ---------------------------------" +CRLF;
+			                                              "  ---    ---------------------------------" +CRLF;
 	protected final Hashtable<Integer, BBSTelnetHost> bbsHostTable  = new Hashtable<Integer, BBSTelnetHost>();
-	protected boolean  disconnected = true, checkTimedOut = true;
+	protected boolean  disconnected = true;
 	protected Socket   socket;
 	protected InputStream srIn;
 	protected OutputStream srOut;
 	protected Channel  channel;
-	protected Session session;
+    protected CommPortIdentifier portIdentifier;	
+    protected Session session;
 	protected YModem   yModem;
 	protected XModem   xModem;
 	protected BBSTelnetHost bbsHost;
 	
-	protected long timer;
-	
 	public byte [] header,help, prompt;
-	
 	protected int opts;
-
 	protected boolean esc = false;
 	
 	protected ArrayList<String> cmdList;
 	protected int cmdIndex = -1;
-	
-	protected CommPortIdentifier portIdentifier;	
 
 	protected static final Logger LG = Logger.getLogger(SerialModem.class.getName());
 
@@ -147,11 +145,11 @@ public class SerialModem {
  		
 
  	protected  class TelnetThreader implements Runnable {
- 		MacroInputStream in;
- 		MacroOutputStream out;
+ 		InputStream in;
+ 		OutputStream out;
  		public TelnetThreader(InputStream i, OutputStream o) {
- 			in  = new MacroInputStream(i);
- 			out = new MacroOutputStream(o);
+ 			in  = i;
+ 			out = o;
  		}
  		public void run() {
  			try {
@@ -183,6 +181,7 @@ public class SerialModem {
 		@Override
 		public void close() throws IOException {
 			LG.info("-> closing output buffer"); // but not really
+			disconnected = true;
 			outputStream.flush();
 		}
 		@Override
@@ -206,54 +205,34 @@ public class SerialModem {
 		protected InputStream  inputstream;
 		public MacroInputStream(InputStream mis) {
 			inputstream = mis;
-			esc = false;
-			
-			if (checkTimedOut) {
-				timer = new Date().getTime() / 1000;	
-				(new Thread(new Runnable() {
-					@Override
-					public void run() {
-						while (true) {						
-							try {Thread.sleep(90000);} catch (Exception e) {}
-							long now = new Date().getTime() / 1000;
-							if(!disconnected && (now - timer) > (5 * 60) ) {
-								try {srOut.write((TIMEOUTEXIT).getBytes());} catch (IOException e1) {}
-								userExit();
-							}
-						}	
-
-					}})).start();
-			}
-		
+			esc = false;		
 		}
 
 		@Override
 		public int available() throws IOException {return inputstream.available();}
 		@Override
 		public void close() throws IOException {
-			LG.info("-> closing input buffer");  // but not really
-			userExit();
+				LG.info("-> closing input buffer");  // but not really
+				userExit();
+				inputstream.reset();
 			}
 		
-
 		protected int doMacros(int chr) throws IOException {
 
-			if (!disconnected && esc) {
-			 if(chr == 45) 
+			if (!disconnected) {
+			 if(esc && chr == 45) 
 				 return userExit();
-			 else if (chr == 117 && !bbsHost.user.isEmpty()) 
+			 else if (esc && chr == 117 && !bbsHost.user.isEmpty()) 
 				  return userUserID();				  
-			 else if (chr == 112 && !bbsHost.password.isEmpty()) 
+			 else if (esc && chr == 112 && !bbsHost.password.isEmpty()) 
 				  return userPassword();
+			 
 			}
-			
-			if (checkTimedOut) 
-				timer = new Date().getTime() / 1000;
+
 			
 			esc = (chr==27)? true: false;					
 			return chr;
 		}
-
 
 		@Override
 		public boolean equals(Object o) { return inputstream.equals(o);}
@@ -269,12 +248,12 @@ public class SerialModem {
 		@Override
 		public int read(byte[] b) throws IOException {
 			int a = inputstream.read(b);
-			if(a > -1) for(byte c:b) doMacros(c);
+			if(a > -1) for(byte c: b) doMacros(c);
 			return a;
 		}
 		@Override
 		public int read(byte[] b, int off,  int len) throws IOException {
-			int a = inputstream.read(b, off, len>1024?1024:len);
+			int a = inputstream.read(b, off, len >1024?1024:len);
 			if(a > -1) for(byte c:b) doMacros(c);
 			return a;
 		}
@@ -321,8 +300,8 @@ public class SerialModem {
 	protected boolean doSaveBBSDirectory (int n, String login, String password) {
 
 		if (!bbsHostTable.containsKey(n)) return false;
-
-		BBSTelnetHost updBBS = bbsHostTable.get(n);
+		
+		BBSTelnetHost updBBS = bbsHostTable.get(n);		
 		
 		try {
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -382,7 +361,6 @@ public class SerialModem {
 		} 
 	}
 
-	
 	
 	protected boolean doPromptSet(String newprompt ) {
 		try {
@@ -503,7 +481,7 @@ public class SerialModem {
 			java.util.Properties config = new java.util.Properties(); 
 			config.put("StrictHostKeyChecking", "no");
 			session.setConfig(config);
-			session.connect(TO);
+			session.connect(0);
 
 			channel = session.openChannel("shell");
 			
@@ -515,9 +493,10 @@ public class SerialModem {
 			((ChannelShell) channel).setEnv("LANG", "ja_JP.eucJP");
 
 			disconnected = false;		 
-			channel.setInputStream( new MacroInputStream(srIn),   false);
+			channel.setInputStream(new MacroInputStream(srIn), false);
 			channel.setOutputStream(new MacroOutputStream(srOut), false);
-			channel.connect(40500);		
+			
+			channel.connect(60000);		
 
 		} catch (Exception e) {
 			LG.log(Level.SEVERE, " Exception:", e);
@@ -534,7 +513,15 @@ public class SerialModem {
 		return true;
 	}
 
+	protected boolean doConnectTelnet(String hostadr) throws IOException {
+		String[] host = hostadr.split(":");
+		if (StringUtils.isNumeric(host[1]) )   			
+			return doConnectTelnet(host[0], Integer.parseInt(host[1]));
+		
+		return false;
+	}
 	
+
 	protected boolean doConnectTelnet(String host, int port) throws IOException   {
 		srOut.write(CONECT.getBytes());
 
@@ -545,9 +532,14 @@ public class SerialModem {
 			LG.info("-> doConnectTelnet():" + host+":"+port);
 			disconnected = false; 
 			socket = new Socket(host, port);
+			MacroInputStream i = new MacroInputStream(srIn);
+			
+			(new Thread(new TelnetThreader(new MacroInputStream(srIn), 
+				socket.getOutputStream()) )).start();
 
-			(new Thread(new TelnetThreader(srIn, socket.getOutputStream()) )).start();
-			(new Thread(new TelnetThreader(socket.getInputStream(), srOut) )).start();
+			(new Thread(new TelnetThreader(socket.getInputStream(),
+				new	MacroOutputStream(srOut)) )).start();
+			
 			
 		} catch (Exception e) {
 			LG.log(Level.SEVERE, " Exception:", e);
@@ -564,12 +556,9 @@ public class SerialModem {
 	
 	protected boolean doConnectXREC(String file) throws IOException   {
 		disconnected = false;
-		checkTimedOut = false;
 		Path path;
 		try {
-			
 			LG.info("-> doConnectXREC():" + file);
-			
 			srOut.write((CRLF+CRLF+" ** XMODEM receiving file "+file+CRLF).getBytes());					
 			srOut.flush();
 			
@@ -590,13 +579,9 @@ public class SerialModem {
 	
 	protected boolean doConnectXSND(String file) throws IOException   {
 		disconnected = false;
-		checkTimedOut = false;
 		Path path;
-		
-		try {
-			
+		try {			
 			LG.info("-> doConnectXSND():" + file);
-			
 			srOut.write((CRLF+CRLF+" ** XMODEM sending file :"+file+CRLF).getBytes());
 			srOut.flush();
 			
@@ -617,12 +602,9 @@ public class SerialModem {
 
 	protected boolean doConnectYREC() throws IOException    {
 		disconnected = false;
-		checkTimedOut = false;
 		Path path;
 		try {			
-			
 			LG.info("-> doConnectYREC():");
-			
 			srOut.write((CRLF+CRLF+" ** YMODEM batch receive to :"+BatchStartUp.inbound+CRLF).getBytes());
 			srOut.flush();
 			path = Paths.get(new URI(_fl+BatchStartUp.inbound));
@@ -642,9 +624,7 @@ public class SerialModem {
 
 	protected boolean doConnectYSND() throws IOException   {
 		disconnected = false;
-		checkTimedOut = false;
 		try {
-			
 			LG.info("-> doConnectYSND():");
 			srOut.write((CRLF+CRLF+" ** YMODEM batch send from :"+BatchStartUp.outbound+CRLF).getBytes());
 			srOut.flush();
@@ -714,7 +694,7 @@ public class SerialModem {
 	
 	protected boolean doServerY2KDate() {
 		try {
-			LG.info("-> doServerDate()");
+			LG.info("-> doServerY2KDate()");
 			Date d = new Date();
 			int year30 =  Integer.parseInt(new SimpleDateFormat("yyyy").format(d)) - 30;
 			srOut.write(( Integer.toString(year30) + new SimpleDateFormat(" MM dd kk mm ss").format(d)).getBytes());
@@ -757,49 +737,32 @@ public class SerialModem {
 
 		return true;
 	}
-	
-	
-	protected boolean doTimOutFlag() {
-		try {
-			checkTimedOut = ! checkTimedOut;
-			srOut.write(CRLF.getBytes());
-			srOut.write(("   Inactive timer:  " + (checkTimedOut ?"On":"off") ).getBytes());
-			srOut.write(CRLF.getBytes());
-			srOut.flush();
-		} catch (IOException e) {
-			LG.log(Level.SEVERE, " Exception:", e);
-			return false;
-		}
-		return true;
-	}
-	
-	
+		
 	
 	protected  String getStringFromPort(boolean isPassword) {	
 		StringBuilder line = new StringBuilder();	
-	    int c1 = -1,c2 = -1 ,c3 = -1;
-		cmdIndex = cmdList.size();
-			 
+	    int c1 = -1, c2 = -1, c3 = -1;
+	 
 		try {
-			while ((c1 = srIn.read()) != -1 && c1 != 0x0D) {			
-				c1 = (c1 == 0x7F) ? 0x08 : c1;	 
-				
-				if(c1 == 0x08 && line.length() > 0)
+			while ((c1 = srIn.read()) != -1 && c1 != 0x0D) {		
+				c1 = (c1 == 0x7F) ? 0x08 : c1;	 			
+				if(c1 == DEL && line.length() > 0) 
 					line.deleteCharAt(line.length()-1);				
-								
-				else
+				else if(c3 == ESC && (c1 == UP || c1 == DOWN)) 
+					line = getLastCmd(c1);
+				 else 
 					line.append((char) (c1 & 0xFF));
+				
 				
 				if(isPassword)
 					srOut.write(ST & 0xFF);
-				else 
+				
+				else if (c3 != ESC && c2 != ESC &&  c1 != ESC)
 					srOut.write(c1 & 0xFF);
 				
 				c3 = c2; c2 = c1;
-			}			
+			}	
 			
-			
-
 		} catch (IOException e) {
 			LG.log(Level.SEVERE, " Exception:", e);
 			return "";
@@ -808,15 +771,30 @@ public class SerialModem {
 		return line.toString().trim();
 	}
 	
+	private StringBuilder getLastCmd(int c1) throws IOException {
+				
+		if (cmdIndex == -1) return new StringBuilder("");
+		
+		else if (c1 == UP && cmdIndex < cmdList.size()-1) cmdIndex++;		
+		else if (c1 == UP) cmdIndex = 0;		
+		
+		else if (c1 == DOWN && cmdIndex > 0)   cmdIndex--;		
+		else if (c1 == DOWN) cmdIndex = cmdList.size()-1;		
+		
+		String line = cmdList.get(cmdIndex);
+		srOut.write(prompt);
+		srOut.write(line.getBytes());
+		return new StringBuilder(line);
+	}
 	
 		
 	public void go(final String portname, final int bRate) {
-		
+
 		while (true) {
 			try {
 				startSession(portname, bRate);				
 			} catch (Exception e) {LG.log(Level.SEVERE, " Exception:", e);
-				
+
 			} finally {
 				try {srIn.close();}  catch (Exception e) {}
 				try {srOut.close();} catch (Exception e) {}
@@ -833,7 +811,6 @@ public class SerialModem {
 
 		try {
 			String opt = "";
-
 			StringTokenizer st = new StringTokenizer(command.trim());
 			int stCount = st.countTokens();
 			ArrayList<String> cmd = new ArrayList<String>(stCount);
@@ -854,18 +831,23 @@ public class SerialModem {
 			else if(stCount == 2 && "prompt".equals(opt))  
 				return doPromptSet(cmd.get(1));
 
-			else	if("?".equals(opt) || "help".equals(opt)) 		
+			else if("?".equals(opt) || "help".equals(opt)) 		
 				return doHelp();
 
-			else	if("getdtm".equals(opt)) 		
+			else if("getdtm".equals(opt)) 		
 				return doServerDate();
 
-			else	if("gety2k".equals(opt)) 
+			else if("gety2k".equals(opt)) 
 				return doServerY2KDate();
+
+			else if(( (stCount == 2 && "atd".equals(opt)) 
+					|| (stCount == 2 && "bbs".equals(opt)))
+					&&  cmd.get(1).contains(":") )  			
+				return doConnectTelnet(cmd.get(1));
 
 			else if(( (stCount == 3 && "atd".equals(opt)) 
 					|| (stCount == 3 && "bbs".equals(opt)))
-					&&  StringUtils.isNumeric(cmd.get(2)) )  	
+					&&  StringUtils.isNumeric(cmd.get(2)) )  			
 				return doConnectTelnet(cmd.get(1), Integer.parseInt(cmd.get(2)));
 
 			else if(stCount == 2 && "src".equals(opt))  
@@ -878,9 +860,6 @@ public class SerialModem {
 			else if(stCount == 4 && StringUtils.isNumeric(cmd.get(1)) 
 					&& "save".equals(opt))  		
 				return doSaveBBSDirectory(Integer.parseInt(cmd.get(1)), cmd.get(2), cmd.get(3));	
-
-			else if("timer".equals(opt)) 
-				return doTimOutFlag();	
 
 			else if("lsi".equals(opt))  
 				return doListServerFiles(BatchStartUp.inbound);
@@ -941,14 +920,19 @@ public class SerialModem {
 				srOut.write(prompt);
 				String cmd = getStringFromPort(false).trim();
 				if(cmd != null && !cmd.equals(""))  
-					if(processCommand(cmd))	
-						cmdList.add(cmd);
-					else 
+					if(processCommand(cmd)) { 
+						if(! cmdList.contains(cmd)) cmdList.add(cmd);
+					}	else { 
 						srOut.write((CONFAIL).getBytes());
+					}
+				
+				if(cmdList.contains(cmd)) cmdIndex = cmdList.indexOf(cmd);
+
 			} 
-			Thread.sleep(1000);  
+			
+			
+			Thread.sleep(100);  
 		}	
-		
 	}
 	
 	

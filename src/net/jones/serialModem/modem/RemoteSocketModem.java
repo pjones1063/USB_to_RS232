@@ -65,11 +65,15 @@ public class RemoteSocketModem extends SerialModem {
 				srOut.write(prompt);
 				String cmd = getStringFromPort(false).trim();
 				if(cmd != null && !cmd.equals(""))  
-					if(processCommand(cmd))	
-						cmdList.add(cmd);
-					else 
-						srOut.write((CONFAIL).getBytes());
-			} 
+					if(cmd != null && !cmd.equals(""))  
+						if(processCommand(cmd)) { 
+							if(! cmdList.contains(cmd)) cmdList.add(cmd);
+						}	else { 
+							srOut.write((CONFAIL).getBytes());
+						}				
+					if(cmdList.contains(cmd)) cmdIndex = cmdList.indexOf(cmd);
+			}
+			
 			Thread.sleep(100);  
 		}	
 		
