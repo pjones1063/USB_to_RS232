@@ -34,9 +34,9 @@ Set-Up
 
  $ ./usmModem.jar
 
-=======================
-Atari Serial Comm Usage
-=======================
+===========================
+RS232_2_USB Connector Usage
+===========================
 
 usage: usbModem.jar
 Parms
