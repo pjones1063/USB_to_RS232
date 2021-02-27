@@ -106,18 +106,14 @@
 *   atd hostname/IP port   --> TCP connect to host    
 *   bbs hostname/IP port   --> TCP connect to host   
 *   ssh user@hostname:port  -->  ssh to host   
-   
 *   cls   -->  Clear screen        
-*   prompt value   --> Set command prompt
-*   timer   --> Toggle inactive timer
-   
+*   prompt value   --> Set command prompt   
 *   ysend   --> YMODEM Batch download
 *   yrecv   --> YMODEM Batch upload 
 *   xsend filename   --> XMODEM Download
 *   xrecv filename   --> XMODEM Upload 
 *   lsi   -->  List inbound folder
 *   lso   -->  List outbound folder
-   
 *   [esc] -    --> Exit to prompt
 *   [esc] u    --> User macro
 *   [esc] p    --> Password marco

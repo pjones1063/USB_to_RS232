@@ -96,7 +96,6 @@ Parms
    
    cls   -->  Clear screen        
    prompt value   --> Set command prompt
-   timer   --> Toggle inactive timer
    
    ysend   --> YMODEM Batch download
    yrecv   --> YMODEM Batch upload 
