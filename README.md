@@ -2,7 +2,7 @@
 # USB_to_RS232 Connector (usbModem)
  
   
- ### Connect to any BBS or SSH host from any 8 or 16 bit Atari or Commodore computer using an RS232 to USB PL2303 cable
+ ### Connect to any BBS or SSH host from any 8, 16 or 32 bit - Atari, Commodore or TI-99 computer using a USB to RS232 PL2303 cable
 
  ### Debian - Raspberry Pi Usage
 
