@@ -1,5 +1,5 @@
-Set-Up
-------
+USB_to_RS232 Connector - Set-Up
+-------------------------------
 
 
 -Best run on a Raspberry Pi. When you order the USB/RS232 cable - buy a Pi as well!
