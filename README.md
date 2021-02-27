@@ -10,56 +10,67 @@
 
  * Purchase a USB to RS232 Adapter with PL2303 Chipset (on Amazon)
  
- * If using an 850 interface - build db9 null modem adapter. See nullmodem-atari850-db9-db9.png for pin layout.
-  
- * Install java JVM -> https://www.oracle.com/java/technologies/javase-downloads.html
- 
-       - On Raspberry Pi/Debian run -    $ sudo apt-get install oracle-java8-jdk  
-       - Windows and other OS's - see documentation 
- 
- * Install the librxtx-java API ->  http://rxtx.qbang.org/wiki/index.php/Main_Page  
- 
-       - On Raspberry Pi/Debian run -    $ sudo apt install librxtx-java  
-       - Windows and other OS's - see documentation
-       
- * Install the JSch API ->   http://www.jcraft.com/jsch/ 
- 
-       - On Raspberry Pi/Debian run -   $ sudo apt install libjsch-java  
-       - Windows and other OS's - see documentation
- 
- * Run the app:    $ ./usbModem.jar "-s=/dev/ttyUSB0" "-b=19200"
-    where:  
+ *  If using an Atari 850 interface see 850 Null Modem cable wiring: [Atari NullModem](http://atari.fox-1.nl/atari-400-800-xl-xe/400-800-xl-xe-tools/null-modem-cable-wiring/)
+ 	
+ *  If using the Commodore User Port see GGLabs - User Port RS232 for Commodore 8-bit Computers: [User Port RS232 ](https://gglabs.us/node/680)	
     
-     -s   =  serial port of the adapter  
-     -b   =  serial port baud rate
+ * Install [java 1.8 JVM](https://www.oracle.com/java/technologies/javase-downloads.html)
+    * Windows and other OS's - see documentation 
+    * On Raspberry Pi or other Linux
+  
+``` 
+$ sudo apt-get install oracle-java8-jdk 
+```
  
- * Connect up the cable to an Atari and run some terminal 
-    program - like TAZ or Bobterm
-    -ensure the baud rate is as above and bits/stop bit is 8/1
+ * Install [librxtx-java API](https://packages.debian.org/search?keywords=librxtx-java)  
+    * Windows and other OS's - see documentation 
+    * On Raspberry Pi or other Linux
+   
+``` 
+$ sudo apt install librxtx-java
+```
+
+       
+ * Install [JSch API](http://www.jcraft.com/jsch/) 
+    * Windows and other OS's - see documentation
+    * On Raspberry Pi or other Linux
+       
+```       
+$ sudo apt install libjsch-java  
+```
+
+ * Start the connector:
+
+``` 
+$ ./usbModem.jar "-s=/dev/ttyUSB0" "-b=19200"
+```
+       
+   -s   =  serial port of the adapter  
+   -b   =  serial port baud rate
  
-
-
-*  Good Luck!
-
-
-
-
+ * Connect up the cable run some terminal 
+    program - like TAZ, Bobterm, ICET, NovaTerm, StrikeTerm, etc... 
+    
+ * Set the baud rate is as above and bits/stop bit is 8/1
+ 
 
 ------------------------------------------------------------
 
  ###  Command Line Options and Usage
 
+```
 
- *  -b,--baud <baud>           Serial Baud Rate
- *  -H,--remotehost <remhost>  TCP remote server mode host
- *  -i,--inboundfolder <in>    Inbound transfer folder path
- *  -l,--localport <localport> TCP server local mode port 
- *  -m,--menufile <menu>       Menu banner file path
- *  -o,--outboundfolder <out>  Outbound transfer folder path
- *  -P,--remoteport <remport>  TCP remote server mode port
- *  -s,--serialport <serial>   Serial Port Name
- *  -x,--xmlfile <xml>         XML BBS directory file path
- 
+    *  -b,--baud <baud>           Serial Baud Rate
+    *  -H,--remotehost <remhost>  TCP remote server mode host
+    *  -i,--inboundfolder <in>    Inbound transfer folder path
+    *  -l,--localport <localport> TCP server local mode port 
+    *  -m,--menufile <menu>       Menu banner file path
+    *  -o,--outboundfolder <out>  Outbound transfer folder path
+    *  -P,--remoteport <remport>  TCP remote server mode port
+    *  -s,--serialport <serial>   Serial Port Name
+    *  -x,--xmlfile <xml>         XML BBS directory file path
+    
+```
 
 ------------------------------------------------------------
 
@@ -80,14 +91,26 @@
  ### Examples
 
  *  Start with serial usb device ttyUSB0 at 19200
-  *   - $ usbModem.jar -s=/dev/ttyUSB0 -b=19200
+ 
+ 
+```
+$ usbModem.jar -s=/dev/ttyUSB0 -b=19200
+```
+
 
  * Start with remote tcp (Altirra modem emulation)
-  *   - $ usbModem.jar -H=192.168.0.100 -P=8080
+ 
+
+```
+$ usbModem.jar -H=192.168.0.100 -P=8080
+```
+
 
  *  Start local tcp server
-  *   - $ usbModem.jar -l=9090
-
+ 
+```
+$ usbModem.jar -l=9090
+```
 
 ------------------------------------------------------------
 
