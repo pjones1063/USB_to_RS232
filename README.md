@@ -12,7 +12,7 @@
  
  *  If using an Atari 850 interface see 850 Null Modem cable wiring: [Atari NullModem](http://atari.fox-1.nl/atari-400-800-xl-xe/400-800-xl-xe-tools/null-modem-cable-wiring/)
  	
- *  If using the Commodore User Port see GGLabs - User Port RS232 for Commodore 8-bit Computers: [User Port RS232 ](https://gglabs.us/node/680)	
+ *  If using the Commodore User Port see GGLabs - User Port RS232 for Commodore 8-bit Computers: [User Port RS232 ](https://gglabs.us/node/2044)	
     
  * Install [java 1.8 JVM](https://www.oracle.com/java/technologies/javase-downloads.html)
     * Windows and other OS's - see documentation 
@@ -42,7 +42,7 @@ $ sudo apt install libjsch-java
  * Start the connector:
 
 ``` 
-$ ./usbModem.jar "-s=/dev/ttyUSB0" "-b=19200"
+$ ./usbModem.jar -s=/dev/ttyUSB0 -b=19200
 ```
        
    -s   =  serial port of the adapter  
