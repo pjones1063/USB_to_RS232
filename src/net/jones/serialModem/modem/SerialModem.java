@@ -78,7 +78,7 @@ public class SerialModem {
 	protected final static String CONECT      = CRLF+CRLF+"Connecting....."+CRLF;
 	protected final static String SLIST       = CRLF+CRLF+"  Num    Name  -  Host" +CRLF+
 			                                              "  ---    ---------------------------------" +CRLF;
-	protected final Hashtable<Integer, BBSTelnetHost> bbsHostTable  = new Hashtable<Integer, BBSTelnetHost>();
+	protected final Hashtable<Integer, BBSEntry> bbsHostTable  = new Hashtable<Integer, BBSEntry>();
 	protected boolean  disconnected = true;
 	protected Socket   socket;
 	protected InputStream srIn;
@@ -88,7 +88,7 @@ public class SerialModem {
     protected Session session;
 	protected YModem   yModem;
 	protected XModem   xModem;
-	protected BBSTelnetHost bbsHost;
+	protected BBSEntry bbsHost;
 	
 	public byte [] header,help, prompt;
 	protected int opts;
@@ -99,11 +99,11 @@ public class SerialModem {
 
 	protected static final Logger LG = Logger.getLogger(SerialModem.class.getName());
 
- 	protected class BBSTelnetHost {
+ 	protected class BBSEntry {
 		public int number, port;
 		public String host, name,user, password;
 		public boolean ssh;
-		public BBSTelnetHost(String bb) {
+		public BBSEntry(String bb) {
 			ssh = false;
 			user = "";
 			password = "";		
@@ -126,7 +126,7 @@ public class SerialModem {
 			
 		}
 
-		public BBSTelnetHost(String bbsName, String bbsHost, String bbsPort, String bbsProtocol, String bbsLogin, String bbsPassword ) {
+		public BBSEntry(String bbsName, String bbsHost, String bbsPort, String bbsProtocol, String bbsLogin, String bbsPassword ) {
 			try {
 				name = bbsName;
 				host = bbsHost;
@@ -279,7 +279,7 @@ public class SerialModem {
 				if(node.getNodeName().equals("BBS")) {
 					NamedNodeMap m =  node.getAttributes();
 
-					BBSTelnetHost bbs = new BBSTelnetHost(
+					BBSEntry bbs = new BBSEntry(
 							m.getNamedItem("name").getNodeValue(),
 							m.getNamedItem("ip").getNodeValue(), 
 							m.getNamedItem("port").getNodeValue(),
@@ -301,7 +301,7 @@ public class SerialModem {
 
 		if (!bbsHostTable.containsKey(n)) return false;
 		
-		BBSTelnetHost updBBS = bbsHostTable.get(n);		
+		BBSEntry updBBS = bbsHostTable.get(n);		
 		
 		try {
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -345,7 +345,7 @@ public class SerialModem {
 	protected boolean doListBBSDirectory (int n) {
 
 		if (!bbsHostTable.containsKey(n)) return false;
-		BBSTelnetHost lstBBS = bbsHostTable.get(n);
+		BBSEntry lstBBS = bbsHostTable.get(n);
 		
 		try {
 			srOut.write((CRLF+CRLF+ "  * "+lstBBS.name).getBytes());
@@ -532,7 +532,6 @@ public class SerialModem {
 			LG.info("-> doConnectTelnet():" + host+":"+port);
 			disconnected = false; 
 			socket = new Socket(host, port);
-			MacroInputStream i = new MacroInputStream(srIn);
 			
 			(new Thread(new TelnetThreader(new MacroInputStream(srIn), 
 				socket.getOutputStream()) )).start();
@@ -708,15 +707,15 @@ public class SerialModem {
 	}
 	
 	
-	protected boolean doSreachBBSListing(String src) throws IOException {
+	protected boolean doSrcBBSListing(String src) throws IOException {
 
 		LG.info("-> doSreachBBSListing:"+src);
-		Enumeration<BBSTelnetHost> bbsEnum = bbsHostTable.elements();
+		Enumeration<BBSEntry> bbsEnum = bbsHostTable.elements();
 		DecimalFormat f = new DecimalFormat("0000");
 		StringBuffer mn = new StringBuffer("");
 		int i = 0;
 		while (bbsEnum.hasMoreElements() && i < 25) {
-			BBSTelnetHost bbs = bbsEnum.nextElement();
+			BBSEntry bbs = bbsEnum.nextElement();
 			String name = bbs.name.toLowerCase();
 			if (name.contains(src) && bbs.port > 0) {						
 				if(bbs.password != null &&  bbs.password.length() > 0)
@@ -771,19 +770,18 @@ public class SerialModem {
 		return line.toString().trim();
 	}
 	
-	private StringBuilder getLastCmd(int c1) throws IOException {
+	protected StringBuilder getLastCmd(int c1) throws IOException {
 				
 		if (cmdIndex == -1) return new StringBuilder("");
-		
 		else if (c1 == UP && cmdIndex < cmdList.size()-1) cmdIndex++;		
 		else if (c1 == UP) cmdIndex = 0;		
-		
 		else if (c1 == DOWN && cmdIndex > 0)   cmdIndex--;		
 		else if (c1 == DOWN) cmdIndex = cmdList.size()-1;		
 		
 		String line = cmdList.get(cmdIndex);
 		srOut.write(prompt);
 		srOut.write(line.getBytes());
+		
 		return new StringBuilder(line);
 	}
 	
@@ -840,18 +838,18 @@ public class SerialModem {
 			else if("gety2k".equals(opt)) 
 				return doServerY2KDate();
 
-			else if(( (stCount == 2 && "atd".equals(opt)) 
+			else if((  (stCount == 2 && "atd".equals(opt)) 
 					|| (stCount == 2 && "bbs".equals(opt)))
 					&&  cmd.get(1).contains(":") )  			
 				return doConnectTelnet(cmd.get(1));
 
-			else if(( (stCount == 3 && "atd".equals(opt)) 
+			else if((  (stCount == 3 && "atd".equals(opt)) 
 					|| (stCount == 3 && "bbs".equals(opt)))
 					&&  StringUtils.isNumeric(cmd.get(2)) )  			
 				return doConnectTelnet(cmd.get(1), Integer.parseInt(cmd.get(2)));
 
 			else if(stCount == 2 && "src".equals(opt))  
-				return doSreachBBSListing(cmd.get(1).toLowerCase());			
+				return doSrcBBSListing(cmd.get(1).toLowerCase());			
 
 			else if(stCount == 2 && StringUtils.isNumeric(cmd.get(1))
 					&& "list".equals(opt))  		
@@ -873,10 +871,10 @@ public class SerialModem {
 			else if("yrecv".equals(opt))  
 				return doConnectYREC();
 
-			else if("xsend".equals(opt) & stCount == 2)  
+			else if(stCount == 2 && "xsend".equals(opt))  
 				return doConnectXSND(cmd.get(1));
 
-			else if("xrecv".equals(opt) & stCount == 2 )  
+			else if(stCount == 2 && "xrecv".equals(opt)  )  
 				return doConnectXREC(cmd.get(1));
 
 		} catch (Exception e) {			
@@ -946,6 +944,7 @@ public class SerialModem {
 		try {if(socket  != null) socket.close();}         catch (Exception e) {}
 		try {if(channel != null) channel.disconnect();}   catch (Exception e) {}
 		try {if(session != null) session.disconnect();}   catch (Exception E) {}
+		
 		return -1;
 	}
 
@@ -953,6 +952,7 @@ public class SerialModem {
 		socket.getOutputStream().write((char)0x08);
 		socket.getOutputStream().write(bbsHost.password.getBytes());
 		socket.getOutputStream().flush();
+		
 		return -1;
 	}
 
