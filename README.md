@@ -4,11 +4,12 @@
   
  ### Connect to any BBS or SSH host from any 8, 16 or 32 bit - Atari, Commodore or TI-99 computer using a USB to RS232 PL2303 cable
  
- 
 
-![blogentry-4709-0-16224300-1528734162](https://user-images.githubusercontent.com/3331718/133704191-f27cde04-29b1-4235-ab41-498d0bf8ccb1.png)
+![1 (3)](https://user-images.githubusercontent.com/3331718/133704368-d2256f90-7f0d-4293-aa25-4584dae95a37.jpeg)
 
- 
+
+![1 (4)](https://user-images.githubusercontent.com/3331718/133704383-062cf8fb-c8a4-4434-9467-559534e222e8.jpeg)
+
 
  ### Debian - Raspberry Pi Usage
 
