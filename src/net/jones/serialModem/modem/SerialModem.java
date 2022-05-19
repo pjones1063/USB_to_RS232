@@ -451,7 +451,7 @@ public class SerialModem {
 		try {
 			LG.info("-> doConnectSSH():" + command);
 			JSch jsch = new JSch();
-			int sp = command.indexOf('@');
+			int sp = command.lastIndexOf('@');
 
 			String user = command.substring(0, sp);
 			String host = command.substring(sp+1);
@@ -459,7 +459,7 @@ public class SerialModem {
 
 			if(host.contains(":")) {
 				try {
-					sp = host.indexOf(":");
+					sp = host.lastIndexOf(":");
 					port = Integer.parseInt(host.substring(sp+1));
 					host = host.substring(0, sp);
 				} catch (Exception n) {} 
@@ -501,10 +501,8 @@ public class SerialModem {
 		} catch (Exception e) {
 			LG.log(Level.SEVERE, " Exception:", e);
 			srOut.write((CRLF + e.getMessage() + CRLF).getBytes());
-
 			try {channel.disconnect();} catch (Exception e1) {}
-			try {session.disconnect();} catch (Exception e1) {}
-			
+			try {session.disconnect();} catch (Exception e1) {}			
 			disconnected = true;
 			esc = false;
 			return false;

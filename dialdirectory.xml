@@ -821,7 +821,7 @@
         <BBS name="Trashcan BBS" ip="bbs.thenet.gen.nz" port="2324" protocol="TELNET" login="" password="" font="vga8x16.bmp" keyMap="ANSI" />
         <BBS name="Traveller's Rest BBS" ip="206.180.140.49" port="23" protocol="TELNET" login="" password="" font="vga8x16.bmp" keyMap="ANSI" />
         <BBS name="Trex BBS" ip="trexbbs.org" port="23" protocol="TELNET" login="" password="" font="vga8x16.bmp" keyMap="ANSI" />
-        <BBS name="Tri-Lynx 2021" ip="104.40.86.171" port="23" protocol="TELNET" login="" password="" font="vga8x16.bmp" keyMap="ANSI" />
+        <BBS name="Tri-Lynx 2022" ip="104.40.86.171" port="23" protocol="TELNET" login="" password="" font="vga8x16.bmp" keyMap="ANSI" />
         <BBS name="Troy's Den BBS" ip="troybbs.com" port="23" protocol="TELNET" login="" password="" font="vga8x16.bmp" keyMap="ANSI" />
         <BBS name="Tundra's BBS" ip="24.80.132.37" port="23" protocol="TELNET" login="" password="" font="vga8x16.bmp" keyMap="ANSI" />
         <BBS name="TWBBS" ip="163.21.236.8" port="23" protocol="TELNET" login="" password="" font="vga8x16.bmp" keyMap="ANSI" />
