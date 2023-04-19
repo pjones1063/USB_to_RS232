@@ -22,12 +22,14 @@ public class BatchStartUp {
 	private static int pPort = -1;
 	private static int pRemPort = -1;
 	private static String  pRemHost = null;
+	
 
 	public  static String splush    = null;
 	public  static String  dialxml   = null;
 	public  static String inbound   = null;
 	public  static String outbound  = null;	
-
+	
+	public  static String loggerlevel  = null;	
 	
 	public static void main(String[] args) {
 
@@ -68,6 +70,10 @@ public class BatchStartUp {
 				Option.builder("o").argName("out").longOpt("outboundfolder").required(false)
 				.hasArg(true).numberOfArgs(1).desc("Outbound transfer folder path").build());
 
+		options.addOption( 
+				Option.builder("L").argName("lg").longOpt("logger").required(false)
+				.hasArg(true).numberOfArgs(1).desc("Log Level").build());
+
 		try {
 
 			CommandLineParser cmdLineParser = new DefaultParser();  
@@ -79,11 +85,13 @@ public class BatchStartUp {
 			outbound = commandLine.getOptionValue('o',"/home/pi/Transfer/outbound");
 			pRemHost = commandLine.getOptionValue('H',"localhost");
 			portName = commandLine.getOptionValue('s');
+			
+			loggerlevel = commandLine.getOptionValue('L',"off");
 					
 			String br = commandLine.getOptionValue('b');
 			String sv = commandLine.getOptionValue('P');
 			String pr = commandLine.getOptionValue('l');
-
+			
 			if(StringUtils.isNumeric(br))  bRate   = Integer.parseInt(br);
 			if(StringUtils.isNumeric(sv))  pRemPort = Integer.parseInt(sv);
 			if(StringUtils.isNumeric(pr))  pPort = Integer.parseInt(pr);
@@ -94,7 +102,7 @@ public class BatchStartUp {
 			(new Thread(new Runnable() {
 				@Override
 				public void run() {
-					(new SerialModem()).go(portName,bRate);
+					(new SerialModem()).go(portName,bRate,loggerlevel);
 				}
 			})).start();
 
@@ -102,7 +110,7 @@ public class BatchStartUp {
 				(new Thread(new Runnable() {
 					@Override
 					public void run() {
-						(new SocketServerModem()).go(pPort);
+						(new SocketServerModem()).go(pPort,loggerlevel);
 					}
 				})).start();
 
@@ -110,7 +118,7 @@ public class BatchStartUp {
 				(new Thread(new Runnable() {
 					@Override
 					public void run() {
-						(new RemoteSocketModem()).go(pRemHost,pRemPort);
+						(new RemoteSocketModem()).go(pRemHost,pRemPort,loggerlevel);
 					}
 				})).start();
 

@@ -1,6 +1,7 @@
 package net.jones.serialModem.modem;
 
 import gnu.io.CommPort;
+
 import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;
 
@@ -46,6 +47,8 @@ import com.jcraft.jsch.Session;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import java.util.logging.FileHandler;
 
 
 public class SerialModem {
@@ -97,7 +100,7 @@ public class SerialModem {
 	protected ArrayList<String> cmdList;
 	protected int cmdIndex = -1;
 
-	protected static final Logger LG = Logger.getLogger(SerialModem.class.getName());
+    protected static final Logger LG = Logger.getLogger(SerialModem.class.getName());
 
  	protected class BBSEntry {
 		public int number, port;
@@ -144,7 +147,7 @@ public class SerialModem {
 	}
  		
 
- 	protected  class TelnetThreader implements Runnable {
+ protected  class TelnetThreader implements Runnable {
  		InputStream in;
  		OutputStream out;
  		public TelnetThreader(InputStream i, OutputStream o) {
@@ -166,7 +169,7 @@ public class SerialModem {
  		}
  	}
 	
- 	
+  	
 	protected class MacroOutputStream extends OutputStream  {
 		protected OutputStream  outputStream;
 		
@@ -218,7 +221,6 @@ public class SerialModem {
 			}
 		
 		protected int doMacros(int chr) throws IOException {
-
 			if (!disconnected) {
 			 if(esc && chr == 45) 
 				 return userExit();
@@ -228,8 +230,6 @@ public class SerialModem {
 				  return userPassword();
 			 
 			}
-
-			
 			esc = (chr==27)? true: false;					
 			return chr;
 		}
@@ -248,13 +248,13 @@ public class SerialModem {
 		@Override
 		public int read(byte[] b) throws IOException {
 			int a = inputstream.read(b);
-			if(a > -1) for(byte c: b) doMacros(c);
+			if(a > -1) doMacros(b[0]);
 			return a;
 		}
 		@Override
 		public int read(byte[] b, int off,  int len) throws IOException {
 			int a = inputstream.read(b, off, len >1024?1024:len);
-			if(a > -1) for(byte c:b) doMacros(c);
+			if(a > -1) doMacros(b[off]);
 			return a;
 		}
 		@Override
@@ -784,7 +784,10 @@ public class SerialModem {
 	}
 	
 		
-	public void go(final String portname, final int bRate) {
+	public void go(final String portname, final int bRate, String lgr) {
+
+		if(!"off".equals(lgr)) 
+		    setLogger("//home//atari//Documents//logs//"+ (portname.replaceAll("/","_"))+".log", lgr);
 
 		while (true) {
 			try {
@@ -961,10 +964,24 @@ public class SerialModem {
 		socket.getOutputStream().flush();
 		return -1;
 	}
+	
+    public void setLogger(String logpath, String level) {
+        LG.setUseParentHandlers(false);
+        try {
+                FileHandler fh = new FileHandler(logpath);
+                LG.addHandler(fh);
+                SimpleFormatter formatter = new SimpleFormatter();  
+                fh.setFormatter(formatter);
+                if ("FINE".equals(level))
+                        LG.setLevel(Level.FINEST);
 
+        } catch (SecurityException | IOException e) {
+                e.printStackTrace();
+        }
+    }     
 	
 	public static void main(String[] args) { 
-		(new SerialModem()).go("/dev/ttyUSB0", 19200);
+		(new SerialModem()).go("/dev/ttyUSB0", 19200,"off");
 		}
 	
 }
