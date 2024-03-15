@@ -26,7 +26,7 @@
     * On Raspberry Pi or other Linux
   
 ``` 
-$ sudo apt-get install oracle-java8-jdk 
+$ sudo apt-get install  default-jdk default-jre
 ```
  
  * Install [librxtx-java API](https://packages.debian.org/search?keywords=librxtx-java)  
@@ -49,7 +49,7 @@ $ sudo apt install libjsch-java
  * Start the connector:
 
 ``` 
-$ ./usbModem.jar -s=/dev/ttyUSB0 -b=19200
+$ java -jar ./usbModem.jar -s=/dev/ttyUSB0 -b=19200
 ```
        
    -s   =  serial port of the adapter  
