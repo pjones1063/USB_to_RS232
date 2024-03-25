@@ -1,9 +1,6 @@
 package net.jones.serialModem.modem;
 
-import gnu.io.CommPort;
-
-import gnu.io.CommPortIdentifier;
-import gnu.io.SerialPort;
+import com.fazecast.jSerialComm.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -87,7 +84,7 @@ public class SerialModem {
 	protected InputStream srIn;
 	protected OutputStream srOut;
 	protected Channel  channel;
-    protected CommPortIdentifier portIdentifier;	
+//  protected CommPortIdentifier portIdentifier;	
     protected Session session;
 	protected YModem   yModem;
 	protected XModem   xModem;
@@ -186,6 +183,7 @@ public class SerialModem {
 			LG.info("-> closing output buffer"); // but not really
 			disconnected = true;
 			outputStream.flush();
+			userExit();
 		}
 		@Override
 		public void write(byte [] b) throws IOException {
@@ -216,8 +214,7 @@ public class SerialModem {
 		@Override
 		public void close() throws IOException {
 				LG.info("-> closing input buffer");  // but not really
-				userExit();
-				inputstream.reset();
+				disconnected = true;
 			}
 		
 		protected int doMacros(int chr) throws IOException {
@@ -422,6 +419,7 @@ public class SerialModem {
 	}
 	
 	
+	@SuppressWarnings("removal")
 	protected boolean doConnect(int command) throws IOException {
 		Integer o = new Integer(command);
 		if(!bbsHostTable.containsKey(o)) return false;		
@@ -472,6 +470,14 @@ public class SerialModem {
 			String pty = getStringFromPort(false);
 			if(null == pty || pty.equals("")) pty = "ansi";
 
+			srOut.write((CRLF+SPC5+"Terminal width (80): ").getBytes());
+			String width = getStringFromPort(false);
+			if(null == width || width.equals("")) width = "80";
+
+			srOut.write((CRLF+SPC5+"Terminal height (25): ").getBytes());
+			String height = getStringFromPort(false);
+			if(null == height || height.equals("")) height = "25";
+
 			if(host.length() < 1 || user.length() < 1 || psswd.length() < 1) return false;
 			srOut.write(CONECT.getBytes());
 
@@ -484,13 +490,12 @@ public class SerialModem {
 			session.connect(0);
 
 			channel = session.openChannel("shell");
-			
-			//((ChannelShell) channel).setPtyType("dumb");
-			//((ChannelShell) channel).setPtyType("xterm");
-			//((ChannelShell) channel).setPtyType("vt100");
 
 			((ChannelShell) channel).setPtyType(pty);
 			((ChannelShell) channel).setEnv("LANG", "ja_JP.eucJP");
+			((ChannelShell) channel).setPtyType(pty,
+					Integer.parseInt(width),Integer.parseInt(height),
+					Integer.parseInt(width),Integer.parseInt(height));
 
 			disconnected = false;		 
 			channel.setInputStream(new MacroInputStream(srIn), false);
@@ -784,14 +789,14 @@ public class SerialModem {
 	}
 	
 		
-	public void go(final String portname, final int bRate, String lgr) {
+	public void go(String portname, int bRate,int bDataBits, String lgr, String logPath) {
 
-		if(!"off".equals(lgr)) 
-		    setLogger("//home//atari//Documents//logs//"+ (portname.replaceAll("/","_"))+".log", lgr);
+		if(!"off".equals(lgr) && portname != null) 
+		    setLogger(logPath + "//COM_" + (portname.replaceAll("/","-"))+".log", lgr);
 
 		while (true) {
 			try {
-				startSession(portname, bRate);				
+				startSession(portname, bRate, bDataBits);				
 			} catch (Exception e) {LG.log(Level.SEVERE, " Exception:", e);
 
 			} finally {
@@ -886,25 +891,33 @@ public class SerialModem {
 	}
 
 
-	void startSession(String portName, int bRate) throws Exception {
+	void  startSession(String portName, int bRate, int bDataBits) throws Exception {
 		cmdList = new ArrayList<String>();
 		cmdIndex = -1;
+				
+//   	portIdentifier = CommPortIdentifier.getPortIdentifier(portName);		
+//	    if (portIdentifier.isCurrentlyOwned()) throw new IOException("Error - Serial port in use!");
+//		CommPort commPort = portIdentifier.open(this.getClass().getName(), TO);
+//		SerialPort serialPort = (SerialPort) commPort;		
+//		serialPort.setSerialPortParams(
+//				bRate,
+//				SerialPort.DATABITS_8, 
+//				SerialPort.STOPBITS_1,
+//				SerialPort.PARITY_NONE);
 		
-   		portIdentifier = CommPortIdentifier.getPortIdentifier(portName);		
-		if (portIdentifier.isCurrentlyOwned()) throw new IOException("Error - Serial port in use!");
-
-		buildMenu();				
-		CommPort commPort = portIdentifier.open(this.getClass().getName(), TO);
-		SerialPort serialPort = (SerialPort) commPort;
-
-		serialPort.setSerialPortParams(
-				bRate,
-				SerialPort.DATABITS_8, 
-				SerialPort.STOPBITS_1,
-				SerialPort.PARITY_NONE);
+		buildMenu();
 		
-		srOut  = serialPort.getOutputStream();
-		srIn   = serialPort.getInputStream();
+		SerialPort commPort =  SerialPort.getCommPort(portName);
+		commPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
+		commPort.setComPortParameters(bRate, 
+				bDataBits, 
+				SerialPort.ONE_STOP_BIT, 
+				SerialPort.NO_PARITY);
+		
+		commPort.openPort(300);
+		
+		srOut  = commPort.getOutputStream();
+		srIn   = commPort.getInputStream();
 		
 		yModem = new YModem(srIn, srOut);
 		xModem = new XModem(srIn, srOut);		
@@ -912,7 +925,7 @@ public class SerialModem {
 		srOut.write(CLEAR);
 		srOut.write(header);
 
-		LG.info(" -> Serial Modem Restarted: "+portName+ " @ "+bRate);
+	LG.info(" -> Serial Modem Restarted: "+portName+ " @ "+bRate);
 		 
 		while (true) {
 			if(disconnected) {								
@@ -981,7 +994,7 @@ public class SerialModem {
     }     
 	
 	public static void main(String[] args) { 
-		(new SerialModem()).go("/dev/ttyUSB0", 19200,"off");
+		(new SerialModem()).go("/dev/ttyUSB0",19200 ,8 ,"off" ,"~");
 		}
 	
 }

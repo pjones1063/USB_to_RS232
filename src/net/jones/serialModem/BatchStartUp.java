@@ -15,11 +15,15 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
 
+import com.fazecast.jSerialComm.SerialPort;
+
 public class BatchStartUp {
 
 	private static String portName = null;		
 	private static int bRate   = -1;
 	private static int pPort = -1;
+	private static int bDataBits = -1;
+	
 	private static int pRemPort = -1;
 	private static String  pRemHost = null;
 	
@@ -30,6 +34,7 @@ public class BatchStartUp {
 	public  static String outbound  = null;	
 	
 	public  static String loggerlevel  = null;	
+	public  static String loggerfile  = null;	
 	
 	public static void main(String[] args) {
 
@@ -44,8 +49,13 @@ public class BatchStartUp {
 				.hasArg(true).numberOfArgs(1).desc("Serial Baud Rate").build());
 
 		options.addOption( 
+				Option.builder("d").argName("databits").longOpt("databits").required(false)
+				.hasArg(true).numberOfArgs(1).desc("Data Bits").build());
+
+		options.addOption( 
 				Option.builder("P").argName("remport").longOpt("remoteport").required(false)
 				.hasArg(true).numberOfArgs(1).desc("TCP remote server mode - port number").build());
+		
 		options.addOption( 
 				Option.builder("H").argName("remhost").longOpt("remotehost").required(false)
 				.hasArg(true).numberOfArgs(1).desc("TCP remote server mode - host").build());
@@ -74,8 +84,11 @@ public class BatchStartUp {
 				Option.builder("L").argName("lg").longOpt("logger").required(false)
 				.hasArg(true).numberOfArgs(1).desc("Log Level").build());
 
-		try {
+		options.addOption( 
+				Option.builder("F").argName("logfolder").longOpt("logfolder").required(false)
+				.hasArg(true).numberOfArgs(1).desc("Log file folder").build());
 
+		try {
 			CommandLineParser cmdLineParser = new DefaultParser();  
 			CommandLine commandLine  = cmdLineParser.parse(options, args);
 			
@@ -87,38 +100,42 @@ public class BatchStartUp {
 			portName = commandLine.getOptionValue('s');
 			
 			loggerlevel = commandLine.getOptionValue('L',"off");
-					
+			loggerfile  = commandLine.getOptionValue('F',"~");
+			
+			String db = commandLine.getOptionValue('d',"8");
+			
 			String br = commandLine.getOptionValue('b');
 			String sv = commandLine.getOptionValue('P');
 			String pr = commandLine.getOptionValue('l');
 			
 			if(StringUtils.isNumeric(br))  bRate   = Integer.parseInt(br);
+			if(StringUtils.isNumeric(db))  bDataBits   = Integer.parseInt(db);
 			if(StringUtils.isNumeric(sv))  pRemPort = Integer.parseInt(sv);
 			if(StringUtils.isNumeric(pr))  pPort = Integer.parseInt(pr);
 			
 			printUsage(options);
 
-			if(bRate > 10)
+			if(bRate > 10 )
 			(new Thread(new Runnable() {
 				@Override
 				public void run() {
-					(new SerialModem()).go(portName,bRate,loggerlevel);
+					(new SerialModem()).go(portName, bRate, bDataBits, loggerlevel,loggerfile);
 				}
 			})).start();
 
-			if(pPort > 10)
+			else if(pPort > 10)
 				(new Thread(new Runnable() {
 					@Override
 					public void run() {
-						(new SocketServerModem()).go(pPort,loggerlevel);
+						(new SocketServerModem()).go(pPort,loggerlevel, loggerfile);
 					}
 				})).start();
 
-			if(pRemPort > 10)
+			else if(pRemPort > 10)
 				(new Thread(new Runnable() {
 					@Override
 					public void run() {
-						(new RemoteSocketModem()).go(pRemHost,pRemPort,loggerlevel);
+						(new RemoteSocketModem()).go(pRemHost,pRemPort,loggerlevel,loggerfile);
 					}
 				})).start();
 
@@ -131,6 +148,16 @@ public class BatchStartUp {
 
 	
 	private static void printUsage(final Options options) {  
+
+		SerialPort[] serialPorts = SerialPort.getCommPorts();
+		StringBuffer ports = new StringBuffer("\n - Local Serial ports: \n");
+		for(int x=0;x< serialPorts.length; x++)
+			ports.append("    * ")
+			     .append(serialPorts[x].getSystemPortName())
+			     .append(" - ")
+			     .append(serialPorts[x].getDescriptivePortName())
+			     .append("\n");
+
 		System.out.println("\n=======================");  
 		System.out.println(  "Atari Serial Comm Usage");  
 		System.out.println(  "=======================\n");
@@ -146,10 +173,7 @@ public class BatchStartUp {
 			"\n - Connect to remote tcp (Altirra modem emulation)" +
 			"\n                $ usbModem.jar -H=192.168.0.100 -P=8080 \n"  +			 
 			"\n - Start local tcp server" +
-			"\n                $ usbModem.jar -l=9090 \n \n");
-		
+			"\n                $ usbModem.jar -l=9090 \n \n" + ports +" \n \n" );
 		pw.flush();  
 	} 
-
-
 }

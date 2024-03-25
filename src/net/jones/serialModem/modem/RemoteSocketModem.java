@@ -18,15 +18,15 @@ public class RemoteSocketModem extends SerialModem {
 	private  String host = "";
 	
 	public static void main(String[] args)  { 		
-		(new RemoteSocketModem()).go("localhost", 9090, "off"); 
+		(new RemoteSocketModem()).go("localhost", 9090, "off","~"); 
 	} 
 
 	
 	
-	public void go(String phost, int pport, String lgr) {
+	public void go(String phost, int pport, String lgr, String logPath) {
 
 		if(!"off".equals(lgr)) 
-		    setLogger("//home//atari//Documents//logs//HOST_"+phost+":"+ pport+".log", lgr);
+		    setLogger(logPath+"//HOST_"+phost+":"+ pport+".log", lgr);
 	
 		cmdList = new ArrayList<String>();
 		cmdIndex = -1;

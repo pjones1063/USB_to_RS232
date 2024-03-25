@@ -11,10 +11,6 @@ USB_to_RS232 Connector - Set-Up
 
 -Install java JVM -> https://www.oracle.com/java/technologies/javase-downloads.html
 
--Install the librxtx-java API -> from http://rxtx.qbang.org/wiki/index.php/Main_Page
-
--Install the JSch API -> from http://www.jcraft.com/jsch/
-
 -run as -> $ ./usbModem.jar "-s=/dev/ttyUSB0" "-b=19200" where:
 
    -s = serial port of the adapter

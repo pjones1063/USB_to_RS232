@@ -18,14 +18,13 @@ public class SocketServerModem extends SerialModem {
 	private int port = -1;
 	
 	public static void main(String[] args)  {
-			(new SocketServerModem()).go(9090, "off");
+			(new SocketServerModem()).go(9090, "off","~");
 	}
 	
-	
-	public void go(int pport, String lgr) {
+	public void go(int pport, String lgr, String lgrPath) {
 
 		if(!"off".equals(lgr)) 
-		    setLogger("//home//atari//Documents//logs//PORT_"+ pport+".log", lgr);
+		    setLogger(lgrPath+"//PORT_"+ pport+".log", lgr);
 
 		port = pport;		
 

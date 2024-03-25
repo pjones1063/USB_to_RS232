@@ -29,24 +29,9 @@
 $ sudo apt-get install  default-jdk default-jre
 ```
  
- * Install [librxtx-java API](https://packages.debian.org/search?keywords=librxtx-java)  
-    * Windows and other OS's - see documentation 
-    * On Raspberry Pi or other Linux
-   
-``` 
-$ sudo apt install librxtx-java
-```
-
-       
- * Install [JSch API](http://www.jcraft.com/jsch/) 
-    * Windows and other OS's - see documentation
-    * On Raspberry Pi or other Linux
-       
-```       
-$ sudo apt install libjsch-java  
-```
 
  * Start the connector:
+
 
 ``` 
 $ java -jar ./usbModem.jar -s=/dev/ttyUSB0 -b=19200
