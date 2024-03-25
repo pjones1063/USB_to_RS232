@@ -21,12 +21,12 @@
  	
  *  If using the Commodore User Port see GGLabs - User Port RS232 for Commodore 8-bit Computers: [User Port RS232 ](https://gglabs.us/node/2044)	
     
- * Install [java 1.8 JVM](https://www.oracle.com/java/technologies/javase-downloads.html)
+ * Install [java JVM](https://www.oracle.com/java/technologies/javase-downloads.html)
     * Windows and other OS's - see documentation 
     * On Raspberry Pi or other Linux
   
 ``` 
-$ sudo apt-get install  default-jdk default-jre
+$ sudo apt-get install  default-jdk 
 ```
  
 
